@@ -359,33 +359,7 @@ function MapCanvas({
     className: "svg-container"
   }, /*#__PURE__*/React.createElement("svg", {
     className: "network-canvas"
-  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("filter", {
-    id: "glow-cyan",
-    x: "-20%",
-    y: "-20%",
-    width: "140%",
-    height: "140%"
-  }, /*#__PURE__*/React.createElement("feGaussianBlur", {
-    stdDeviation: "3",
-    result: "blur"
-  }), /*#__PURE__*/React.createElement("feMerge", null, /*#__PURE__*/React.createElement("feMergeNode", {
-    in: "blur"
-  }), /*#__PURE__*/React.createElement("feMergeNode", {
-    in: "SourceGraphic"
-  }))), /*#__PURE__*/React.createElement("filter", {
-    id: "glow-red",
-    x: "-30%",
-    y: "-30%",
-    width: "160%",
-    height: "160%"
-  }, /*#__PURE__*/React.createElement("feGaussianBlur", {
-    stdDeviation: "4",
-    result: "blur"
-  }), /*#__PURE__*/React.createElement("feMerge", null, /*#__PURE__*/React.createElement("feMergeNode", {
-    in: "blur"
-  }), /*#__PURE__*/React.createElement("feMergeNode", {
-    in: "SourceGraphic"
-  })))), network && network.pipes.map(p => {
+  }, network && network.pipes.map(p => {
     const p1 = nodePositions[p.from];
     const p2 = nodePositions[p.to];
     if (!p1 || !p2) return null;
@@ -431,8 +405,7 @@ function MapCanvas({
       cy: pos.y,
       r: radius,
       fill: "#EF4444",
-      fillOpacity: opacity,
-      filter: "url(#glow-red)"
+      fillOpacity: opacity
     }), /*#__PURE__*/React.createElement("circle", {
       cx: pos.x,
       cy: pos.y,
@@ -506,14 +479,13 @@ function MapCanvas({
       cy: pos.y,
       r: isSelected ? "9" : "7",
       fill: "none",
-      stroke: isSelected ? "#00F2FE" : "#F59E0B",
-      strokeWidth: isSelected ? "2.5" : "2",
-      filter: "url(#glow-cyan)"
+      stroke: isSelected ? "#38BDF8" : "#F59E0B",
+      strokeWidth: isSelected ? "2.5" : "2"
     }), /*#__PURE__*/React.createElement("circle", {
       cx: pos.x,
       cy: pos.y,
       r: "3",
-      fill: isSelected ? "#00F2FE" : "#F59E0B"
+      fill: isSelected ? "#38BDF8" : "#F59E0B"
     }));
   }), isRevealed && currentScenario && nodePositions[currentScenario.leak_node] && /*#__PURE__*/React.createElement("g", null, /*#__PURE__*/React.createElement("circle", {
     cx: nodePositions[currentScenario.leak_node].x,
@@ -521,13 +493,12 @@ function MapCanvas({
     r: "14",
     fill: "none",
     stroke: "#EF4444",
-    strokeWidth: "2.5",
-    strokeDasharray: "3 3",
-    filter: "url(#glow-red)"
+    strokeWidth: "2",
+    strokeDasharray: "3 3"
   }), /*#__PURE__*/React.createElement("circle", {
     cx: nodePositions[currentScenario.leak_node].x,
     cy: nodePositions[currentScenario.leak_node].y,
-    r: "6",
+    r: "5",
     fill: "#EF4444"
   })))));
 }
@@ -684,7 +655,7 @@ function SidePanel({
       fontSize: "11px",
       textAlign: "center"
     }
-  }, isLeaking ? "Analyzing anomaly gradient..." : "Click a pipe to start leak scenario")), /*#__PURE__*/React.createElement("button", {
+  }, isLeaking ? "Analyzing pressure anomaly..." : "Click a pipe to start leak scenario")), /*#__PURE__*/React.createElement("button", {
     className: `btn-reveal ${isRevealed ? "active" : ""}`,
     onClick: onToggleReveal
   }, /*#__PURE__*/React.createElement("svg", {

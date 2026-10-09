@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOOND — Leak Detection for Intermittent Water Supply</title>
+  
+  <!-- Modern Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Fallback local script tags for file:// protocol support -->
+  <script src="network.js"></script>
+  <script src="scenarios.js"></script>
+
+  <style>
+    /* -------------------------------------------------------------
+       CSS Design System Tokens & Base Reset
+       Optimized for 1080p Screen Recording & Razor-Sharp Visuals
+       ------------------------------------------------------------- */
+    :root {
+      --bg-base: #080c14;
+      --bg-surface: #0f172a;
+      --bg-surface-elevated: #162238;
+      --bg-card: rgba(18, 28, 48, 0.75);
+      --bg-card-hover: rgba(28, 42, 68, 0.9);
+      --border: #1e2e4a;
+      --border-bright: #334e7a;
+      
+      --text-main: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #849bb5;
+      
+      --cyan-400: #22d3ee;
+      --cyan-500: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.35);
+      
+      --blue-400: #60a5fa;
+      --blue-500: #3b82f6;
+      --blue-600: #2563eb;
+      
+      --amber-400: #fbbf24;
+      --amber-500: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.35);
+      
+      --rose-400: #fb7185;
+      --rose-500: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.4);
+
+      --emerald-400: #34d399;
+      --emerald-500: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.35);
+
+      --purple-400: #c084fc;
+      --purple-500: #a855f7;
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-full: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* -------------------------------------------------------------
+       Top Bar Header (Sticky, 1080p-ready)
+       ------------------------------------------------------------- */
+    header.top-bar {
+      height: 60px;
+      min-height: 60px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0284c7, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--cyan-glow);
+    }
+
+    .logo-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: #ffffff;
+    }
+
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-name {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-tagline {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-simulated {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--amber-400);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.6px;
+      cursor: help;
+    }
+
+    .badge-simulated::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--amber-400);
+      box-shadow: 0 0 8px var(--amber-400);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(18, 28, 48, 0.7);
+      padding: 3px 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+
+    .control-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-left: 6px;
+    }
+
+    .btn-segmented {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-segmented:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-segmented.active {
+      background: var(--blue-600);
+      color: #ffffff;
+      box-shadow: 0 1px 6px rgba(37, 99, 235, 0.4);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action {
+      background: rgba(30, 46, 74, 0.8);
+      border: 1px solid var(--border-bright);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 13px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action:hover {
+      background: rgba(45, 68, 108, 0.9);
+      border-color: var(--blue-400);
+    }
+
+    .btn-action.btn-accent {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.35);
+    }
+
+    .btn-action.btn-accent:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 0 16px rgba(2, 132, 199, 0.5);
+    }
+
+    .btn-action.revealed {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--rose-500);
+      color: var(--rose-400);
+    }
+
+    /* -------------------------------------------------------------
+       Main Layout (65% Map, 35% Panel)
+       ------------------------------------------------------------- */
+    main.app-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 63% 37%;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* -------------------------------------------------------------
+       Left Column: Interactive Network Map Workspace
+       ------------------------------------------------------------- */
+    .map-workspace {
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, #0d1527 0%, #080c14 100%);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .map-overlay-top {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .map-stats-pill {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .map-stat-item strong {
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .map-tools {
+      pointer-events: auto;
+      display: flex;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-tool {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease;
+    }
+
+    .btn-tool:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+    }
+
+    .svg-container {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    .svg-container.panning {
+      cursor: grabbing;
+    }
+
+    svg#network-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Map Legend (Bottom-Left) */
+    .map-legend {
+      position: absolute;
+      bottom: 14px;
+      left: 16px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      z-index: 10;
+      pointer-events: auto;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+
+    .legend-title {
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: 6px 16px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-symbol {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-symbol.sensor {
+      background: var(--cyan-400);
+      box-shadow: 0 0 6px var(--cyan-400);
+    }
+
+    .legend-symbol.pipe {
+      width: 16px;
+      height: 3px;
+      border-radius: 2px;
+      background: #3b82f6;
+    }
+
+    .legend-symbol.leak-injected {
+      background: var(--rose-500);
+      box-shadow: 0 0 6px var(--rose-500);
+    }
+
+    .legend-symbol.candidate {
+      background: linear-gradient(135deg, #06b6d4, #f59e0b);
+    }
+
+    .legend-symbol.next-sensor {
+      background: transparent;
+      border: 2px dashed var(--purple-400);
+    }
+
+    /* Tooltip */
+    #map-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      color: var(--text-main);
+      font-size: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      display: none;
+      transform: translate(-50%, -120%);
+      transition: opacity 0.1s ease;
+      white-space: nowrap;
+    }
+
+    #map-tooltip strong {
+      color: var(--cyan-400);
+      font-family: var(--font-mono);
+    }
+
+    /* -------------------------------------------------------------
+       Right Column: Control & Results Panel
+       ------------------------------------------------------------- */
+    .panel-workspace {
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow-y: auto;
+      border-left: 1px solid var(--border);
+    }
+
+    .panel-workspace::-webkit-scrollbar {
+      width: 6px;
+    }
+    .panel-workspace::-webkit-scrollbar-track {
+      background: var(--bg-surface);
+    }
+    .panel-workspace::-webkit-scrollbar-thumb {
+      background: var(--border-bright);
+      border-radius: 3px;
+    }
+
+    /* Playback Strip */
+    .playback-strip {
+      background: var(--bg-surface-elevated);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .playback-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cycle-badge {
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cycle-badge .highlight {
+      color: var(--cyan-400);
+      font-size: 15px;
+    }
+
+    .playback-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-play-pause {
+      background: var(--blue-600);
+      color: #ffffff;
+      border: none;
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+      transition: transform 0.1s ease, filter 0.15s ease;
+    }
+
+    .btn-play-pause:hover {
+      filter: brightness(1.15);
+      transform: scale(1.04);
+    }
+
+    .btn-step {
+      background: rgba(30, 46, 74, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .btn-step:hover {
+      background: rgba(45, 68, 108, 0.8);
+      color: var(--text-main);
+    }
+
+    .cycle-timeline-slider {
+      flex: 1;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #1e293b;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .cycle-timeline-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cyan-400);
+      box-shadow: 0 0 8px var(--cyan-400);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    .cycle-timeline-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .timeline-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      margin-top: -4px;
+    }
+
+    .timeline-ticks .tick.leak-start {
+      color: var(--rose-400);
+      font-weight: 700;
+    }
+
+    /* Diagnosis Status Banner */
+    .status-banner {
+      margin: 12px 18px 0 18px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .status-banner.alert-detected {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: rgba(244, 63, 94, 0.5);
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.15);
+    }
+
+    .status-banner.alert-undetected {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-indicator-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--emerald-400);
+      box-shadow: 0 0 8px var(--emerald-400);
+    }
+
+    .status-banner.alert-detected .status-indicator-dot {
+      background: var(--rose-500);
+      box-shadow: 0 0 10px var(--rose-500);
+      animation: pulseAlert 1.5s infinite;
+    }
+
+    .status-banner.alert-undetected .status-indicator-dot {
+      background: var(--amber-400);
+      box-shadow: 0 0 8px var(--amber-400);
+    }
+
+    @keyframes pulseAlert {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .status-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .status-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .status-metric-chip {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 8px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: var(--radius-sm);
+    }
+
+    /* Charts Container */
+    .charts-container {
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chart-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      height: 125px;
+    }
+
+    canvas.boond-chart {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* Plain vs Cancelled Comparison Toggle */
+    .comparison-pill {
+      display: inline-flex;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .comparison-pill button {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .comparison-pill button.active {
+      background: var(--blue-600);
+      color: #ffffff;
+    }
+
+    /* Intelligence / Explanation Box */
+    .alert-box {
+      background: rgba(18, 28, 48, 0.6);
+      border-left: 3px solid var(--cyan-500);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 10px 14px;
+      margin: 0 18px 12px 18px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+
+    .alert-box strong {
+      color: var(--text-main);
+    }
+
+    /* Top-K Candidates Table */
+    .candidates-section {
+      padding: 0 18px 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .candidates-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .candidates-table th {
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 6px 10px;
+      font-size: 11px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .candidates-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(30, 46, 74, 0.4);
+      color: var(--text-secondary);
+    }
+
+    .candidates-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .candidates-table tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .node-pill {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text-main);
+      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .score-bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .score-bar {
+      flex: 1;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #06b6d4, #f59e0b);
+      border-radius: 3px;
+    }
+
+    .score-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      width: 38px;
+      text-align: right;
+    }
+
+    /* Next Sensor Callout */
+    .next-sensor-box {
+      margin: 0 18px 14px 18px;
+      background: rgba(168, 85, 247, 0.1);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .next-sensor-box strong {
+      color: var(--purple-400);
+      font-family: var(--font-mono);
+    }
+
+    /* Modal for Presentation Slides / Demo Tour */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 13, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 980px;
+      max-height: 85vh;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 22px;
+      background: var(--bg-surface-elevated);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .modal-close-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .slide-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .slide-tab {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .slide-tab.active {
+      background: var(--blue-600);
+      border-color: var(--blue-500);
+      color: #fff;
+    }
+
+    .slide-content-pane {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .slide-content-pane.active {
+      display: flex;
+    }
+
+    .slide-hero-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .slide-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .slide-card-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .slide-card-box h4 {
+      color: var(--cyan-400);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       TOP BAR (SIMULATED DATA badge, selectors, title, actions)
+       ============================================================ -->
+  <header class="top-bar">
+    <div class="brand-section">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <div class="brand-name">
+            BOOND
+            <span style="font-size: 11px; font-weight: 600; color: var(--cyan-400); background: rgba(6,182,212,0.15); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(6,182,212,0.3);">IWS LEAK DETECT</span>
+          </div>
+          <div class="brand-tagline">Intermittent Water Supply Analytics &bull; WNTR EPANET PDD</div>
+        </div>
+      </div>
+
+      <div class="badge-simulated" title="Simulated hydraulic dataset based on EPANET Pressure-Dependent Demand (PDD) with intermittent supply cycles.">
+        SIMULATED DATA
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <!-- Sensor Count Selector (5 / 10 / 20 default) -->
+      <div class="control-group">
+        <span class="control-label">Sensors:</span>
+        <button class="btn-segmented" data-sensors="5" onclick="setSensorCount('5')">5</button>
+        <button class="btn-segmented" data-sensors="10" onclick="setSensorCount('10')">10</button>
+        <button class="btn-segmented active" data-sensors="20" onclick="setSensorCount('20')">20 (Default)</button>
+      </div>
+
+      <!-- Leak Size Selector (small / medium / large) -->
+      <div class="control-group">
+        <span class="control-label">Leak Size:</span>
+        <button class="btn-segmented" data-size="small" onclick="setLeakSize('small')">Small (~2.5%)</button>
+        <button class="btn-segmented active" data-size="medium" onclick="setLeakSize('medium')">Medium (~7.5%)</button>
+        <button class="btn-segmented" data-size="large" onclick="setLeakSize('large')">Large (~14%)</button>
+      </div>
+
+      <!-- Quick Preset Selector for Demo Presentation -->
+      <div class="control-group" style="padding-right: 6px;">
+        <span class="control-label">Demo Scenario:</span>
+        <select id="scenario-preset-select" onchange="onPresetSelect(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: var(--font-sans); font-size: 12px; font-weight: 600; outline: none; cursor: pointer;">
+          <option value="J-22" style="background: #0f172a;">J-22 (Central Loop &bull; Fast Detect)</option>
+          <option value="J-12" style="background: #0f172a;">J-12 (North Sector &bull; Benchmark)</option>
+          <option value="J-38" style="background: #0f172a;">J-38 (Mid Branch &bull; Clear Masking)</option>
+          <option value="J-62" style="background: #0f172a;">J-62 (South District &bull; Small Fail)</option>
+          <option value="J-45" style="background: #0f172a;">J-45 (East Perimeter &bull; Localized)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Reveal True Leak Button -->
+      <button id="btn-reveal" class="btn-action" onclick="toggleRevealLeak()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span id="reveal-text">Reveal True Leak</span>
+      </button>
+
+      <!-- Video & Methodology Slide Deck Modal Button -->
+      <button class="btn-action btn-accent" onclick="openPresentationModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <span>Video Slides (3-Min)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       MAIN WORKSPACE (63% SVG Map, 37% Diagnostic Results)
+       ============================================================ -->
+  <main class="app-workspace">
+
+    <!-- LEFT: INTERACTIVE SVG WATER NETWORK MAP -->
+    <div class="map-workspace" id="map-workspace">
+      
+      <!-- Top floating info overlay -->
+      <div class="map-overlay-top">
+        <div class="map-stats-pill">
+          <div class="map-stat-item">Network: <strong id="map-stat-nodes">60 Junctions</strong></div>
+          <div class="map-stat-item">&bull;</div>
+          <div class="map-stat-item">Pipes: <strong id="map-stat-pipes">119 Mains</strong></div>
+          <div class="map-stat-item">&bull;</div>
+          <div class="map-stat-item">Active Sensors: <strong id="map-stat-sensors" style="color: var(--cyan-400)">20 Installed</strong></div>
+          <div class="map-stat-item">&bull;</div>
+          <div class="map-stat-item">Supply Windows: <strong style="color: var(--amber-400)">06-09h, 18-21h</strong></div>
+        </div>
+
+        <div class="map-tools">
+          <button class="btn-tool" onclick="resetMapView()" title="Reset Zoom & Pan">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+          </button>
+          <button class="btn-tool" onclick="zoomMap(1.2)" title="Zoom In">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+          </button>
+          <button class="btn-tool" onclick="zoomMap(0.8)" title="Zoom Out">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- SVG container -->
+      <div class="svg-container" id="svg-container">
+        <svg id="network-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <!-- Glowing Sensor Filter -->
+            <filter id="sensor-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <!-- Leak Pulse Filter -->
+            <filter id="leak-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <g id="map-zoom-group">
+            <g id="layer-pipes"></g>
+            <g id="layer-heatmap"></g>
+            <g id="layer-nodes"></g>
+            <g id="layer-sensors"></g>
+            <g id="layer-leak-overlay"></g>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Map Legend (Bottom-Left) -->
+      <div class="map-legend">
+        <div class="legend-title">Network Legend &bull; Colourblind-Safe Sequential</div>
+        <div class="legend-grid">
+          <div class="legend-item">
+            <div class="legend-symbol sensor"></div>
+            <span>Pressure Sensor (m)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-symbol pipe"></div>
+            <span>Distribution Main</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-symbol candidate"></div>
+            <span>Top-K Leak Heatmap</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-symbol leak-injected"></div>
+            <span>True Injected Leak (Revealed)</span>
+          </div>
+          <div class="legend-item" id="legend-next-sensor-item" style="display:none;">
+            <div class="legend-symbol next-sensor"></div>
+            <span>Suggested Next Sensor</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Map Tooltip -->
+      <div id="map-tooltip"></div>
+    </div>
+
+    <!-- RIGHT: DIAGNOSTIC & CONTROL PANEL -->
+    <div class="panel-workspace">
+      
+      <!-- Cycle-By-Cycle Playback Strip -->
+      <div class="playback-strip">
+        <div class="playback-header">
+          <div class="cycle-badge">
+            SUPPLY CYCLE: <span class="highlight" id="lbl-cycle-num">Cycle 0</span>
+            <span style="color: var(--text-muted); font-size: 11px;">(Day 0)</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+            Demand Swing: <span id="lbl-demand-swing" style="color: var(--amber-400); font-weight: 700;">-3.0% (g=0.97)</span>
+          </div>
+        </div>
+
+        <div class="playback-controls-row">
+          <button class="btn-play-pause" id="btn-play-pause" onclick="togglePlayPause()" title="Play / Pause Replay">
+            <svg id="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <svg id="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+              <rect x="6" y="4" width="4" height="16"/>
+              <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+          </button>
+          <button class="btn-step" onclick="stepCycle(-1)" title="Step Previous Cycle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="19 20 9 12 19 4 19 20"/>
+              <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+          <button class="btn-step" onclick="stepCycle(1)" title="Step Next Cycle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 4 15 12 5 20 5 4"/>
+              <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+          
+          <input type="range" min="0" max="7" value="0" step="1" class="cycle-timeline-slider" id="cycle-slider" oninput="onSliderChange(this.value)">
+          
+          <select id="play-speed-select" onchange="setPlaySpeed(this.value)" style="background: rgba(30,46,74,0.6); border: 1px solid var(--border); color: var(--text-secondary); font-size: 11px; font-weight: 600; padding: 4px 6px; border-radius: var(--radius-sm); outline: none;">
+            <option value="1200">0.8x</option>
+            <option value="800" selected>1.0x</option>
+            <option value="450">1.8x</option>
+          </select>
+        </div>
+
+        <div class="timeline-ticks">
+          <span>Cycle 0 (Normal)</span>
+          <span>Cycle 1</span>
+          <span>Cycle 2</span>
+          <span class="tick leak-start">Cycle 3 (Leak Start)</span>
+          <span>Cycle 4</span>
+          <span>Cycle 5</span>
+          <span>Cycle 6</span>
+          <span>Cycle 7</span>
+        </div>
+      </div>
+
+      <!-- Detection Status Banner -->
+      <div class="status-banner" id="status-banner">
+        <div class="status-left">
+          <div class="status-indicator-dot" id="status-indicator-dot"></div>
+          <div>
+            <div class="status-title" id="status-title">NORMAL SUPPLY MONITORING</div>
+            <div class="status-desc" id="status-desc">Background demand fluctuation active &bull; Residuals within threshold</div>
+          </div>
+        </div>
+        <div class="status-metric-chip" id="status-metric-chip">
+          d = 0.38 / 1.10
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-container">
+        
+        <!-- Chart 1: Sensor Pressures Across Cycles (m) -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-400)" stroke-width="2">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                Sensor Pressures During Supply Windows
+              </div>
+              <div class="chart-subtitle">Head in metres (m) &bull; Mean over supply windows [06-09h, 18-21h]</div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);">
+              <span style="color: var(--cyan-400);">&bull; Near Sensor</span> | 
+              <span style="color: var(--blue-400);">&bull; Distant Sensor</span>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="chart-pressure" class="boond-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Detection Metric d vs Threshold -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--rose-400)" stroke-width="2">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+                Detection Metric <i>d</i> vs Persistence Threshold
+              </div>
+              <div class="chart-subtitle">Threshold = 1.10 &bull; Alarm rule: 2 of last 3 cycles exceeding</div>
+            </div>
+
+            <div class="comparison-pill">
+              <button id="btn-chart-cancelled" class="active" onclick="setChartMetricMode('cancelled')">Demand-Cancelled</button>
+              <button id="btn-chart-plain" onclick="setChartMetricMode('plain')">Plain Threshold</button>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="chart-detection" class="boond-chart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Plain Language Explanation Alert Box -->
+      <div class="alert-box" id="alert-explanation-box">
+        <strong>Monitoring Cycle 0:</strong> Water supply window active (06:00-09:00). All pressure signals reflect baseline hydraulics under normal +/-10% consumer demand variations. Demand cancellation filter is actively removing systemic swings.
+      </div>
+
+      <!-- Suggested Next Sensor Callout (Hidden if null) -->
+      <div class="next-sensor-box" id="next-sensor-box" style="display: none;">
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--purple-400);">
+            Algorithmic Recommendation
+          </div>
+          <div style="font-size: 12px; color: var(--text-main);">
+            Install next pressure sensor at <strong id="next-sensor-id">J-40</strong> to resolve blind-spot ambiguity.
+          </div>
+        </div>
+        <button class="btn-action" style="font-size: 11px; padding: 4px 8px; border-color: var(--purple-500); color: var(--purple-400);" onclick="focusNode(currentScenario.results[currentSensorCount].next_sensor)">
+          Highlight on Map
+        </button>
+      </div>
+
+      <!-- Top-K Localisation Candidates Table -->
+      <div class="candidates-section">
+        <div class="section-title-row">
+          <span class="section-title">Top-K Localised Candidates (Neighbourhood Sector)</span>
+          <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">Ranked by Cosine Signature</span>
+        </div>
+
+        <table class="candidates-table">
+          <thead>
+            <tr>
+              <th style="width: 45px;">Rank</th>
+              <th style="width: 80px;">Junction</th>
+              <th>Likelihood Score</th>
+              <th style="width: 70px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="candidates-tbody">
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 14px;">
+                Inject leak or play scenario to compute localisation candidates.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ============================================================
+       PRESENTATION SLIDES MODAL (Under 3:00 Demo Video Companion)
+       ============================================================ -->
+  <div class="modal-backdrop" id="presentation-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-400)" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          BOOND Presentation Companion &bull; 3-Minute Video Storyboard
+        </div>
+        <button class="modal-close-btn" onclick="closePresentationModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="slide-tabs">
+          <button class="slide-tab active" onclick="switchSlideTab(0)">0:00 - The Problem</button>
+          <button class="slide-tab" onclick="switchSlideTab(1)">0:25 - Figure 1: Demand Masking</button>
+          <button class="slide-tab" onclick="switchSlideTab(2)">0:55 - Demand Cancellation</button>
+          <button class="slide-tab" onclick="switchSlideTab(3)">1:15 - Live Demo Script</button>
+          <button class="slide-tab" onclick="switchSlideTab(4)">2:10 - AWS Architecture</button>
+          <button class="slide-tab" onclick="switchSlideTab(5)">2:35 - Honest Limits</button>
+        </div>
+
+        <!-- Slide 0: The Problem -->
+        <div class="slide-content-pane active" id="slide-pane-0">
+          <div class="slide-hero-title">Indian Cities Lose 30-50% Treated Water to Hidden Leaks</div>
+          <div class="slide-grid-2">
+            <div>
+              <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6;">
+                Most Indian urban centres (Delhi, Bengaluru, Shimla) receive water for only <strong>2 to 4 hours per day</strong> (Intermittent Water Supply — IWS).
+              </p>
+              <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6;">
+                All standard commercial leak detection systems assume <strong>continuous, 24/7 pressurized flow</strong> with smooth diurnal profiles. Under IWS, pipes empty and refill every day, causing extreme transients and masking leaks.
+              </p>
+              <div class="slide-card-box">
+                <h4>Why Continuous Models Fail</h4>
+                <p style="font-size: 13px;">Pipes fill with air between supply cycles. When water is pumped, air pockets cause massive surge waves, followed by brief supply windows with volatile consumer drawing.</p>
+              </div>
+            </div>
+            <div class="slide-card-box" style="text-align: center; padding: 24px;">
+              <div style="font-size: 52px; font-weight: 800; color: var(--rose-400); font-family: var(--font-mono);">35-50%</div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Non-Revenue Water (NRW) in India</div>
+              <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary); text-align: left;">
+                &bull; 2-4 hours supply daily<br>
+                &bull; Pressure drops to 0m between cycles<br>
+                &bull; Leaks act as contamination vectors when pressure drops
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 1: Figure 1: Demand Masking -->
+        <div class="slide-content-pane" id="slide-pane-1">
+          <div class="slide-hero-title">Figure 1: Demand Swings Mask Leak Anomalies</div>
+          <div class="slide-grid-2">
+            <div>
+              <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6;">
+                Day-to-day consumer demand naturally swings by <strong>&plusmn;10%</strong>. In an intermittent pipe network, this &plusmn;10% swing moves junction pressure head by <strong>0.8 to 1.5 metres</strong>.
+              </p>
+              <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6;">
+                A medium pipe leak (7.5% of total supply) also causes a pressure drop of ~1.2 metres. Therefore, a naive fixed pressure threshold confuses normal demand surges with leaks, catching only <strong>49% of leaks</strong> at 5% False Alarm Rate.
+              </p>
+            </div>
+            <div class="slide-card-box">
+              <h4>Key Insight</h4>
+              <p style="font-size: 13px; margin-bottom: 10px;">
+                <strong>Plain Threshold:</strong> 49% detection rate.<br>
+                <strong>Demand Masking Problem:</strong> A hot day with +8% water demand looks mathematically identical to an active pipe rupture!
+              </p>
+              <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--amber-400);">
+                &Delta;P_demand &asymp; -7.2 &times; (g - 1.0) &asymp; &plusmn;0.9 m head<br>
+                &Delta;P_leak &asymp; -1.1 m head (Confounded!)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 2: Demand Cancellation -->
+        <div class="slide-content-pane" id="slide-pane-2">
+          <div class="slide-hero-title">Mathematical Innovation: Demand Cancellation Residual</div>
+          <div class="slide-grid-2">
+            <div>
+              <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6;">
+                Because consumer demand affects all sensors simultaneously via network-wide sensitivity vectors <i>s</i>, we project out the common mode:
+              </p>
+              <div style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--cyan-400); margin-bottom: 12px;">
+                &circ;g = (s &bull; r) / (s &bull; s)<br>
+                r_c = r - s &times; &circ;g<br>
+                d = ||r_c||
+              </div>
+              <p style="font-size: 13px; line-height: 1.6;">
+                <strong>Multi-Cycle Persistence Rule:</strong> Alarm only fires if <i>d &gt; 1.10</i> in 2 of the last 3 supply cycles.
+              </p>
+            </div>
+            <div class="slide-card-box">
+              <h4>Detection Benchmark (from WNTR Sims)</h4>
+              <table style="width: 100%; font-size: 12px; text-align: left; margin-top: 6px;">
+                <thead>
+                  <tr style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                    <th style="padding: 4px;">Method</th>
+                    <th style="padding: 4px;">Sensors</th>
+                    <th style="padding: 4px;">Detection Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td style="padding: 4px;">Plain Threshold</td><td style="padding: 4px;">20</td><td style="padding: 4px; color: var(--rose-400);">49%</td></tr>
+                  <tr><td style="padding: 4px;">Boond Cancelled</td><td style="padding: 4px;">5</td><td style="padding: 4px; color: var(--amber-400);">52%</td></tr>
+                  <tr><td style="padding: 4px;">Boond Cancelled</td><td style="padding: 4px;">12</td><td style="padding: 4px; color: var(--cyan-400);">69%</td></tr>
+                  <tr><td style="padding: 4px;"><strong>Boond Cancelled</strong></td><td style="padding: 4px;"><strong>20</strong></td><td style="padding: 4px; color: var(--emerald-400); font-weight:700;">78%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 3: Live Demo Script -->
+        <div class="slide-content-pane" id="slide-pane-3">
+          <div class="slide-hero-title">1:15 - 2:10 Live Demo Recording Instructions</div>
+          <div class="slide-card-box" style="margin-bottom: 14px;">
+            <h4>Step-by-Step Recording Actions</h4>
+            <ol style="padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+              <li><strong>Select Scenario J-22 (Medium Leak):</strong> Click on junction J-22 in the network map.</li>
+              <li><strong>Press Play (&blacktriangleright;):</strong> Watch the replay advance from Cycle 0 to Cycle 4. Explain that pre-leak cycles 0-2 show background demand cancellation.</li>
+              <li><strong>Highlight Detection at Cycle 4:</strong> Show red alarm trigger! Notice that <i>d</i> crossed threshold 1.10 and satisfied the 2-cycle persistence rule.</li>
+              <li><strong>Inspect Heatmap:</strong> Point out the top-k candidate gradient around J-22. Click "Reveal True Leak" to verify candidate alignment.</li>
+              <li><strong>Demonstrate Honest Degradation:</strong> Toggle sensor count from <strong>20 &rarr; 5 sensors</strong>. Notice how the detection statistic drops and delay increases, showing the honest physical trade-off!</li>
+            </ol>
+          </div>
+          <button class="btn-action btn-accent" onclick="startAutomatedDemoTour()">
+            Run Automated Demo Walkthrough Now
+          </button>
+        </div>
+
+        <!-- Slide 4: AWS Architecture -->
+        <div class="slide-content-pane" id="slide-pane-4">
+          <div class="slide-hero-title">AWS Serverless Cloud Architecture</div>
+          <div class="slide-grid-2">
+            <div>
+              <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6;">
+                Built on high-availability, low-cost AWS serverless primitives designed to scale to thousands of district metered areas (DMAs).
+              </p>
+              <div style="font-size: 13px; line-height: 1.8;">
+                &bull; <strong>AWS Amplify:</strong> Single-page zero-build static hosting.<br>
+                &bull; <strong>Amazon API Gateway HTTP API:</strong> Sub-50ms REST interface.<br>
+                &bull; <strong>AWS Lambda (Python 3.12):</strong> Demand cancellation & signature scoring.<br>
+                &bull; <strong>Amazon S3:</strong> Network topologies and precomputed scenario vectors.<br>
+                &bull; <strong>Amazon DynamoDB (Optional):</strong> Real-time municipal leak incident log.
+              </div>
+            </div>
+            <div class="slide-card-box" style="font-family: var(--font-mono); font-size: 12px; line-height: 1.8; color: var(--cyan-400);">
+              [Browser / Municipal UI]<br>
+              &nbsp;&nbsp;&darr; (Amplify Static Hosting)<br>
+              [Amazon API Gateway HTTP API]<br>
+              &nbsp;&nbsp;&darr;<br>
+              [AWS Lambda Python 3.12]<br>
+              &nbsp;&nbsp;&darr; (IAM Scoped Role)<br>
+              [Amazon S3 Bucket: scenarios.json & model.npz]
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 5: Honest Limits -->
+        <div class="slide-content-pane" id="slide-pane-5">
+          <div class="slide-hero-title">Honest Limits & Engineering Scope</div>
+          <div class="slide-grid-2">
+            <div class="slide-card-box">
+              <h4>What Boond Solves</h4>
+              <ul style="padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 6px;">
+                <li>Eliminates demand masking false alarms under intermittent supply.</li>
+                <li>Catches 78% of medium/large bursts within 1-2 supply cycles.</li>
+                <li>Localises leak origin to neighbourhood sector (top-5 candidates).</li>
+                <li>Works with modest sensor density (10-20 per DMA).</li>
+              </ul>
+            </div>
+            <div class="slide-card-box">
+              <h4 style="color: var(--amber-400);">Honest Limitations</h4>
+              <ul style="padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 6px;">
+                <li><strong>Simulation-based:</strong> Validated on EPANET WNTR models; requires field pilot validation.</li>
+                <li><strong>Small leaks (<2.5%):</strong> Hard to distinguish from sensor drift under low sensor counts (5 sensors).</li>
+                <li><strong>Neighbourhood-level:</strong> Narrow down to 2-3 pipe blocks; final pinpointing requires acoustic listening sticks.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       APPLICATION LOGIC JAVASCRIPT (Single File Inline JS)
+       ============================================================ -->
+  <script>
+    /* -------------------------------------------------------------
+       Configuration & API Contract (Plan B & C)
+       ------------------------------------------------------------- */
+    const API_BASE = window.API_BASE || ''; // Configurable API Gateway base URL with local fallback
+    
+    // Application State
+    let networkData = null;
+    let scenariosData = null;
+    let currentScenario = null;
+    let currentSensorCount = '20'; // '5', '10', '20'
+    let currentLeakSize = 'medium'; // 'small', 'medium', 'large'
+    let currentCycle = 0; // 0 to 7
+    let isPlaying = false;
+    let playIntervalId = null;
+    let playSpeedMs = 800;
+    let isLeakRevealed = false;
+    let chartMetricMode = 'cancelled'; // 'cancelled' or 'plain'
+    
+    // SVG Pan & Zoom State
+    let mapZoom = 1.0;
+    let mapPanX = 0;
+    let mapPanY = 0;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+
+    // Canvas Chart Handles
+    let pressureCanvas, pressureCtx;
+    let detectionCanvas, detectionCtx;
+
+    /* -------------------------------------------------------------
+       Initialization & Data Loading
+       ------------------------------------------------------------- */
+    window.addEventListener('DOMContentLoaded', async () => {
+      initCanvasCharts();
+      setupSvgInteractions();
+      await loadNetworkAndScenarios();
+    });
+
+    async function loadNetworkAndScenarios() {
+      try {
+        // 1. Try loading network from API_BASE or local network.json
+        if (API_BASE) {
+          try {
+            const netRes = await fetch(`${API_BASE}/network`);
+            networkData = await netRes.json();
+          } catch (e) {
+            console.warn("API network fetch failed, trying local fallback", e);
+          }
+        }
+        
+        if (!networkData) {
+          try {
+            const localNetRes = await fetch('network.json');
+            if (localNetRes.ok) networkData = await localNetRes.json();
+          } catch (e) {
+            console.warn("Local fetch network.json failed, checking script tag", e);
+          }
+        }
+
+        // Fallback to window.BOOND_NETWORK if fetch failed (e.g. file:/// protocol)
+        if (!networkData && window.BOOND_NETWORK) {
+          networkData = window.BOOND_NETWORK;
+        }
+
+        // 2. Try loading scenarios
+        if (!scenariosData) {
+          try {
+            const localScenRes = await fetch('scenarios.json');
+            if (localScenRes.ok) scenariosData = await localScenRes.json();
+          } catch (e) {
+            console.warn("Local fetch scenarios.json failed, checking script tag", e);
+          }
+        }
+
+        if (!scenariosData && window.BOOND_SCENARIOS) {
+          scenariosData = window.BOOND_SCENARIOS;
+        }
+
+        if (!networkData) {
+          console.error("Failed to load network data!");
+          alert("Could not load network.json. Please ensure network.json is in the web directory.");
+          return;
+        }
+
+        // Render network on SVG
+        renderNetworkMap(networkData);
+
+        // Load initial scenario (J-22 medium)
+        selectScenario('J-22', currentLeakSize);
+
+      } catch (err) {
+        console.error("Initialization error:", err);
+      }
+    }
+
+    /* -------------------------------------------------------------
+       Scenario Fetching & Mapping
+       ------------------------------------------------------------- */
+    async function fetchScenario(nodeId, size) {
+      const scenKey = `${nodeId}_${size}`;
+      
+      // If API_BASE is configured, try API endpoint first
+      if (API_BASE) {
+        try {
+          const res = await fetch(`${API_BASE}/scenario?node=${nodeId}&size=${size}`);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          console.warn("API scenario fetch failed, falling back to local dataset", e);
+        }
+      }
+
+      // Check loaded scenarios map
+      if (scenariosData) {
+        if (Array.isArray(scenariosData)) {
+          const found = scenariosData.find(s => s.id === scenKey || (s.leak_node === nodeId && s.size_label === size));
+          if (found) return found;
+        } else if (scenariosData[scenKey]) {
+          return scenariosData[scenKey];
+        } else {
+          // If node not found directly, map to nearest candidate leak node
+          const nearest = findNearestScenarioNode(nodeId, size);
+          if (nearest) return nearest;
+        }
+      }
+
+      return null;
+    }
+
+    function findNearestScenarioNode(targetNodeId, size) {
+      if (!networkData || !scenariosData) return null;
+      const targetNode = networkData.nodes.find(n => n.id === targetNodeId);
+      if (!targetNode) return null;
+
+      let bestDist = Infinity;
+      let bestScenario = null;
+
+      const allScenarios = Array.isArray(scenariosData) ? scenariosData : Object.values(scenariosData);
+      
+      for (const scen of allScenarios) {
+        if (scen.size_label !== size) continue;
+        const leakNode = networkData.nodes.find(n => n.id === scen.leak_node);
+        if (leakNode) {
+          const d = Math.hypot(leakNode.x - targetNode.x, leakNode.y - targetNode.y);
+          if (d < bestDist) {
+            bestDist = d;
+            bestScenario = scen;
+          }
+        }
+      }
+
+      return bestScenario;
+    }
+
+    async function selectScenario(nodeId, size) {
+      pausePlayback();
+      const scen = await fetchScenario(nodeId, size);
+      if (!scen) {
+        console.warn(`Scenario for ${nodeId} (${size}) not found.`);
+        return;
+      }
+
+      currentScenario = scen;
+      currentCycle = 0;
+      isLeakRevealed = false;
+      document.getElementById('btn-reveal').classList.remove('revealed');
+      document.getElementById('reveal-text').textContent = 'Reveal True Leak';
+
+      // Update preset dropdown if matching
+      const sel = document.getElementById('scenario-preset-select');
+      if (sel) {
+        for (let opt of sel.options) {
+          if (opt.value === scen.leak_node) {
+            sel.value = scen.leak_node;
+            break;
+          }
+        }
+      }
+
+      updateUIForCycle();
+    }
+
+    /* -------------------------------------------------------------
+       SVG Network Map Rendering & Interaction
+       ------------------------------------------------------------- */
+    function renderNetworkMap(data) {
+      const pipesLayer = document.getElementById('layer-pipes');
+      const nodesLayer = document.getElementById('layer-nodes');
+      const sensorsLayer = document.getElementById('layer-sensors');
+      
+      pipesLayer.innerHTML = '';
+      nodesLayer.innerHTML = '';
+      sensorsLayer.innerHTML = '';
+
+      document.getElementById('map-stat-nodes').textContent = `${data.nodes.length} Junctions`;
+      document.getElementById('map-stat-pipes').textContent = `${data.pipes.length} Mains`;
+      document.getElementById('map-stat-sensors').textContent = `${data.sensor_sets[currentSensorCount].length} Installed`;
+
+      const nodeMap = new Map();
+      data.nodes.forEach(n => nodeMap.set(n.id, n));
+
+      // Draw Pipes
+      data.pipes.forEach(p => {
+        const nFrom = nodeMap.get(p.from);
+        const nTo = nodeMap.get(p.to);
+        if (!nFrom || !nTo) return;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', nFrom.x);
+        line.setAttribute('y1', nFrom.y);
+        line.setAttribute('x2', nTo.x);
+        line.setAttribute('y2', nTo.y);
+        line.setAttribute('stroke', '#1e385c');
+        line.setAttribute('stroke-width', p.diameter_mm ? (p.diameter_mm / 60).toFixed(1) : '3.5');
+        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('id', `pipe-${p.id}`);
+        line.style.cursor = 'pointer';
+        line.style.transition = 'stroke 0.2s ease, stroke-width 0.2s ease';
+
+        line.addEventListener('click', () => {
+          // Map to nearest node
+          selectScenario(p.from, currentLeakSize);
+        });
+
+        line.addEventListener('mouseenter', (e) => {
+          line.setAttribute('stroke', '#38bdf8');
+          showTooltip(e, `<strong>Pipe ${p.id}</strong><br>From: ${p.from} &rarr; To: ${p.to}<br>Diameter: ${p.diameter_mm || 200} mm`);
+        });
+
+        line.addEventListener('mouseleave', () => {
+          line.setAttribute('stroke', '#1e385c');
+          hideTooltip();
+        });
+
+        pipesLayer.appendChild(line);
+      });
+
+      // Draw Junction Nodes
+      data.nodes.forEach(n => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', n.x);
+        circle.setAttribute('cy', n.y);
+        circle.setAttribute('r', '5');
+        circle.setAttribute('fill', '#334e7a');
+        circle.setAttribute('stroke', '#0f172a');
+        circle.setAttribute('stroke-width', '1.5');
+        circle.setAttribute('id', `node-${n.id}`);
+        circle.style.cursor = 'pointer';
+        circle.style.transition = 'all 0.2s ease';
+
+        circle.addEventListener('click', () => {
+          selectScenario(n.id, currentLeakSize);
+        });
+
+        circle.addEventListener('mouseenter', (e) => {
+          circle.setAttribute('r', '7.5');
+          circle.setAttribute('fill', '#60a5fa');
+          const isSensor = isNodeSensor(n.id);
+          let text = `<strong>Junction ${n.id}</strong><br>Elevation: ${n.elevation || 35.0} m`;
+          if (isSensor) text += `<br><span style="color:var(--cyan-400); font-weight:700;">&bull; Pressure Sensor Active</span>`;
+          showTooltip(e, text);
+        });
+
+        circle.addEventListener('mouseleave', () => {
+          circle.setAttribute('r', '5');
+          circle.setAttribute('fill', '#334e7a');
+          hideTooltip();
+        });
+
+        nodesLayer.appendChild(circle);
+      });
+
+      updateSensorsLayer();
+    }
+
+    function isNodeSensor(nodeId) {
+      if (!networkData) return false;
+      const activeSensors = networkData.sensor_sets[currentSensorCount] || [];
+      return activeSensors.includes(nodeId);
+    }
+
+    function updateSensorsLayer() {
+      const sensorsLayer = document.getElementById('layer-sensors');
+      sensorsLayer.innerHTML = '';
+      if (!networkData) return;
+
+      const activeSensors = networkData.sensor_sets[currentSensorCount] || [];
+      document.getElementById('map-stat-sensors').textContent = `${activeSensors.length} Installed`;
+
+      activeSensors.forEach(sId => {
+        const node = networkData.nodes.find(n => n.id === sId);
+        if (!node) return;
+
+        // Outer pulsing halo
+        const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        pulse.setAttribute('cx', node.x);
+        pulse.setAttribute('cy', node.y);
+        pulse.setAttribute('r', '10');
+        pulse.setAttribute('fill', 'none');
+        pulse.setAttribute('stroke', '#06b6d4');
+        pulse.setAttribute('stroke-width', '1.5');
+        pulse.setAttribute('stroke-opacity', '0.6');
+        pulse.setAttribute('filter', 'url(#sensor-glow)');
+
+        // Core marker
+        const core = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        core.setAttribute('cx', node.x);
+        core.setAttribute('cy', node.y);
+        core.setAttribute('r', '6');
+        core.setAttribute('fill', '#06b6d4');
+        core.setAttribute('stroke', '#ffffff');
+        core.setAttribute('stroke-width', '2');
+        core.style.cursor = 'pointer';
+
+        core.addEventListener('click', () => {
+          selectScenario(node.id, currentLeakSize);
+        });
+
+        core.addEventListener('mouseenter', (e) => {
+          let pVal = "28.5";
+          if (currentScenario && currentScenario.cycles && currentScenario.cycles[currentCycle]) {
+            pVal = currentScenario.cycles[currentCycle].pressures[sId] || "28.5";
+          }
+          showTooltip(e, `<strong>Sensor ${sId}</strong><br>Head: ${pVal} m<br>Ranked DMA Monitor`);
+        });
+
+        core.addEventListener('mouseleave', () => {
+          hideTooltip();
+        });
+
+        sensorsLayer.appendChild(pulse);
+        sensorsLayer.appendChild(core);
+      });
+    }
+
+    /* -------------------------------------------------------------
+       Top-K Candidates Heatmap & Revealed Leak Overlays
+       ------------------------------------------------------------- */
+    function updateHeatmapOverlay() {
+      const heatmapLayer = document.getElementById('layer-heatmap');
+      const leakOverlay = document.getElementById('layer-leak-overlay');
+      heatmapLayer.innerHTML = '';
+      leakOverlay.innerHTML = '';
+
+      if (!currentScenario || !networkData) return;
+
+      const res = currentScenario.results[currentSensorCount];
+      const isDetected = res && (res.detected_cycle !== null) && (currentCycle >= res.detected_cycle);
+
+      // Show heatmap after detection or after leak starts with degraded signal
+      if (res && res.top_k && currentCycle >= 3) {
+        res.top_k.forEach((cand, idx) => {
+          const node = networkData.nodes.find(n => n.id === cand.node);
+          if (!node) return;
+
+          const score = cand.score; // 0 to 1
+          const radius = 14 + score * 18;
+          
+          // Colourblind-safe sequential colour ramp:
+          // Low: cyan/indigo -> High: bright gold/amber
+          let color = score > 0.85 ? '#f97316' : (score > 0.65 ? '#f59e0b' : (score > 0.4 ? '#06b6d4' : '#6366f1'));
+          let opacity = (0.25 + score * 0.45).toFixed(2);
+
+          const aura = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          aura.setAttribute('cx', node.x);
+          aura.setAttribute('cy', node.y);
+          aura.setAttribute('r', radius.toFixed(1));
+          aura.setAttribute('fill', color);
+          aura.setAttribute('fill-opacity', opacity);
+          aura.setAttribute('stroke', color);
+          aura.setAttribute('stroke-width', '2');
+          aura.setAttribute('stroke-dasharray', '3,3');
+          aura.style.cursor = 'pointer';
+
+          aura.addEventListener('click', () => {
+            selectScenario(node.id, currentLeakSize);
+          });
+
+          aura.addEventListener('mouseenter', (e) => {
+            showTooltip(e, `<strong>Top-${idx+1} Candidate: ${node.id}</strong><br>Likelihood Score: ${(score * 100).toFixed(0)}%`);
+          });
+          aura.addEventListener('mouseleave', hideTooltip);
+
+          heatmapLayer.appendChild(aura);
+        });
+      }
+
+      // Next Sensor Marker (if present)
+      const nextSensorItem = document.getElementById('legend-next-sensor-item');
+      if (res && res.next_sensor) {
+        if (nextSensorItem) nextSensorItem.style.display = 'flex';
+        const targetNode = networkData.nodes.find(n => n.id === res.next_sensor);
+        if (targetNode) {
+          const nextRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          nextRing.setAttribute('cx', targetNode.x);
+          nextRing.setAttribute('cy', targetNode.y);
+          nextRing.setAttribute('r', '15');
+          nextRing.setAttribute('fill', 'none');
+          nextRing.setAttribute('stroke', '#c084fc');
+          nextRing.setAttribute('stroke-width', '2.5');
+          nextRing.setAttribute('stroke-dasharray', '4,4');
+
+          nextRing.addEventListener('mouseenter', (e) => {
+            showTooltip(e, `<strong>Suggested Sensor: ${targetNode.id}</strong><br>Optimal algorithmic placement`);
+          });
+          nextRing.addEventListener('mouseleave', hideTooltip);
+
+          leakOverlay.appendChild(nextRing);
+        }
+      } else {
+        if (nextSensorItem) nextSensorItem.style.display = 'none';
+      }
+
+      // If user toggles "Reveal", show true leak node with prominent outline
+      if (isLeakRevealed && currentScenario) {
+        const trueNode = networkData.nodes.find(n => n.id === currentScenario.leak_node);
+        if (trueNode) {
+          const revealHalo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          revealHalo.setAttribute('cx', trueNode.x);
+          revealHalo.setAttribute('cy', trueNode.y);
+          revealHalo.setAttribute('r', '22');
+          revealHalo.setAttribute('fill', 'none');
+          revealHalo.setAttribute('stroke', '#f43f5e');
+          revealHalo.setAttribute('stroke-width', '3');
+          revealHalo.setAttribute('filter', 'url(#leak-glow)');
+
+          const revealCenter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          revealCenter.setAttribute('cx', trueNode.x);
+          revealCenter.setAttribute('cy', trueNode.y);
+          revealCenter.setAttribute('r', '8');
+          revealCenter.setAttribute('fill', '#f43f5e');
+          revealCenter.setAttribute('stroke', '#ffffff');
+          revealCenter.setAttribute('stroke-width', '2');
+
+          revealCenter.addEventListener('mouseenter', (e) => {
+            showTooltip(e, `<strong>TRUE LEAK: ${trueNode.id}</strong><br>Injected Size: ${currentScenario.size_label} (${currentScenario.size_pct_of_supply}% of supply)`);
+          });
+          revealCenter.addEventListener('mouseleave', hideTooltip);
+
+          leakOverlay.appendChild(revealHalo);
+          leakOverlay.appendChild(revealCenter);
+        }
+      }
+    }
+
+    function toggleRevealLeak() {
+      isLeakRevealed = !isLeakRevealed;
+      const btn = document.getElementById('btn-reveal');
+      const txt = document.getElementById('reveal-text');
+      if (isLeakRevealed) {
+        btn.classList.add('revealed');
+        txt.textContent = 'Hide True Leak';
+      } else {
+        btn.classList.remove('revealed');
+        txt.textContent = 'Reveal True Leak';
+      }
+      updateHeatmapOverlay();
+    }
+
+    /* -------------------------------------------------------------
+       UI Updates for Cycle Playback
+       ------------------------------------------------------------- */
+    function updateUIForCycle() {
+      if (!currentScenario) return;
+
+      const slider = document.getElementById('cycle-slider');
+      slider.value = currentCycle;
+
+      document.getElementById('lbl-cycle-num').textContent = `Cycle ${currentCycle}`;
+
+      const cycleData = currentScenario.cycles[currentCycle] || {};
+      const demandFactor = cycleData.demand_factor || 1.0;
+      const demandDeltaPct = ((demandFactor - 1.0) * 100).toFixed(1);
+      const sign = demandDeltaPct >= 0 ? '+' : '';
+      document.getElementById('lbl-demand-swing').textContent = `${sign}${demandDeltaPct}% (g=${demandFactor})`;
+
+      const res = currentScenario.results[currentSensorCount];
+      const threshold = res ? res.threshold : 1.10;
+      const dVal = (res && res.d_series && res.d_series[currentCycle] !== undefined) ? res.d_series[currentCycle] : 0.4;
+      const isDetected = res && (res.detected_cycle !== null) && (currentCycle >= res.detected_cycle);
+      const isLeaking = currentCycle >= currentScenario.start_cycle;
+
+      // Status Banner
+      const banner = document.getElementById('status-banner');
+      const title = document.getElementById('status-title');
+      const desc = document.getElementById('status-desc');
+      const chip = document.getElementById('status-metric-chip');
+
+      chip.textContent = `d = ${dVal.toFixed(2)} / ${threshold.toFixed(2)}`;
+
+      if (isDetected) {
+        banner.className = 'status-banner alert-detected';
+        const delay = res.detected_cycle - currentScenario.start_cycle;
+        title.textContent = `LEAK DETECTED AT CYCLE ${res.detected_cycle}`;
+        desc.textContent = `Confirmed ${delay} cycle(s) after start &bull; Sector alarm triggered with high persistence`;
+      } else if (isLeaking && res && res.detected_cycle === null) {
+        banner.className = 'status-banner alert-undetected';
+        title.textContent = `LEAK UNDETECTED (${currentSensorCount} SENSORS)`;
+        desc.textContent = `Leak active since Cycle 3 &bull; Signal d=${dVal.toFixed(2)} remains below 1.10 threshold`;
+      } else if (isLeaking) {
+        banner.className = 'status-banner';
+        title.textContent = `LEAK COMMENCED (CYCLE 3)`;
+        desc.textContent = `Evaluating multi-cycle persistence rule &bull; d=${dVal.toFixed(2)}`;
+      } else {
+        banner.className = 'status-banner';
+        title.textContent = `NORMAL SUPPLY MONITORING`;
+        desc.textContent = `Background demand fluctuation active &bull; Residuals within threshold`;
+      }
+
+      // Dynamic Alert Explanation Text
+      const alertBox = document.getElementById('alert-explanation-box');
+      if (isDetected) {
+        alertBox.innerHTML = `<strong>Cycle ${currentCycle} Analysis:</strong> Demand-cancelled statistic <strong>d = ${dVal.toFixed(2)}</strong> crossed the 1.10 threshold for 2 consecutive cycles. Common demand swing (${sign}${demandDeltaPct}%) cancelled cleanly. Candidate neighbourhood localised with top rank <strong>${res.top_k[0].node}</strong>.`;
+      } else if (isLeaking && res.detected_cycle === null) {
+        alertBox.innerHTML = `<strong>Cycle ${currentCycle} Limitation Notice:</strong> Small leak (${currentScenario.size_pct_of_supply}% supply) is obscured under sparse <strong>${currentSensorCount} sensor placement</strong>. This illustrates the honest lower boundary of hydraulic observability without dense instrumentation.`;
+      } else if (isLeaking) {
+        alertBox.innerHTML = `<strong>Cycle ${currentCycle} Pipeline Assessment:</strong> Leak signal rising (d = ${dVal.toFixed(2)}). Persistence filter requires 2 consecutive elevated cycles to prevent consumer surge false alarms.`;
+      } else {
+        alertBox.innerHTML = `<strong>Monitoring Cycle ${currentCycle}:</strong> Water supply window active (06:00-09:00, 18:00-21:00). All pressure signals reflect baseline hydraulics under normal &plusmn;10% consumer demand variations.`;
+      }
+
+      // Next Sensor Box
+      const nextSensorBox = document.getElementById('next-sensor-box');
+      if (res && res.next_sensor) {
+        nextSensorBox.style.display = 'flex';
+        document.getElementById('next-sensor-id').textContent = res.next_sensor;
+      } else {
+        nextSensorBox.style.display = 'none';
+      }
+
+      // Top-K Candidates Table
+      updateCandidatesTable(res);
+
+      // Redraw Canvas Charts
+      drawPressureChart();
+      drawDetectionChart();
+
+      // Redraw Map Heatmap
+      updateHeatmapOverlay();
+    }
+
+    function updateCandidatesTable(res) {
+      const tbody = document.getElementById('candidates-tbody');
+      if (!res || !res.top_k || currentCycle < 3) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 14px;">
+              ${currentCycle < 3 ? 'Monitoring normal cycles. Leak starts at Cycle 3.' : 'Computing candidates...'}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      res.top_k.forEach((cand, idx) => {
+        const tr = document.createElement('tr');
+        const scorePct = Math.round(cand.score * 100);
+        
+        tr.innerHTML = `
+          <td style="font-family: var(--font-mono); font-weight: 700; color: ${idx === 0 ? 'var(--amber-400)' : 'var(--text-muted)'};">#${idx+1}</td>
+          <td><span class="node-pill">${cand.node}</span></td>
+          <td>
+            <div class="score-bar-wrapper">
+              <div class="score-bar">
+                <div class="score-fill" style="width: ${scorePct}%;"></div>
+              </div>
+              <div class="score-val">${scorePct}%</div>
+            </div>
+          </td>
+          <td style="text-align: right;">
+            <button class="btn-action" style="font-size: 11px; padding: 2px 7px;" onclick="focusNode('${cand.node}')">Focus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* -------------------------------------------------------------
+       Canvas Charts (Pressure & Detection Metric)
+       ------------------------------------------------------------- */
+    function initCanvasCharts() {
+      pressureCanvas = document.getElementById('chart-pressure');
+      pressureCtx = pressureCanvas.getContext('2d');
+
+      detectionCanvas = document.getElementById('chart-detection');
+      detectionCtx = detectionCanvas.getContext('2d');
+
+      resizeCanvas(pressureCanvas);
+      resizeCanvas(detectionCanvas);
+
+      window.addEventListener('resize', () => {
+        resizeCanvas(pressureCanvas);
+        resizeCanvas(detectionCanvas);
+        drawPressureChart();
+        drawDetectionChart();
+      });
+    }
+
+    function resizeCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+    }
+
+    function drawPressureChart() {
+      if (!pressureCanvas || !currentScenario) return;
+      const rect = pressureCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const ctx = pressureCtx;
+      const dpr = window.devicePixelRatio || 1;
+
+      ctx.save();
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 36, padR = 16, padT = 16, padB = 22;
+      const chartW = w - padL - padR;
+      const chartH = h - padT - padB;
+
+      // Extract pressures for 2 selected sensors (one near leak, one further)
+      const res = currentScenario.results[currentSensorCount];
+      const activeSensors = networkData ? networkData.sensor_sets[currentSensorCount] : [];
+      const s1 = activeSensors[0] || 'J-14';
+      const s2 = activeSensors[activeSensors.length - 1] || 'J-66';
+
+      const s1Pressures = currentScenario.cycles.map(c => c.pressures[s1] || 28.0);
+      const s2Pressures = currentScenario.cycles.map(c => c.pressures[s2] || 31.0);
+
+      const allP = [...s1Pressures, ...s2Pressures];
+      const minP = Math.floor(Math.min(...allP) - 1.5);
+      const maxP = Math.ceil(Math.max(...allP) + 1.5);
+
+      // Y-Axis Grid
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'right';
+
+      const yTicks = 4;
+      for (let i = 0; i <= yTicks; i++) {
+        const val = minP + (i / yTicks) * (maxP - minP);
+        const y = padT + chartH - (i / yTicks) * chartH;
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+        ctx.fillText(val.toFixed(0) + 'm', padL - 6, y + 3);
+      }
+
+      // X-Axis Labels (Cycles 0 to 7)
+      ctx.textAlign = 'center';
+      for (let c = 0; c < 8; c++) {
+        const x = padL + (c / 7) * chartW;
+        ctx.fillText('C' + c, x, h - 4);
+      }
+
+      // Shaded Demand Swing Band (+/- 10%)
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
+      ctx.fillRect(padL, padT + chartH * 0.2, chartW, chartH * 0.45);
+
+      // Leak Start Dotted Vertical Line (Cycle 3)
+      const leakX = padL + (3 / 7) * chartW;
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.6)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(leakX, padT);
+      ctx.lineTo(leakX, padT + chartH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.8)';
+      ctx.font = '9px Inter, sans-serif';
+      ctx.fillText('LEAK INJECT', leakX, padT + 8);
+
+      // Draw Sensor 1 line
+      drawLineSeries(ctx, s1Pressures, minP, maxP, padL, padT, chartW, chartH, '#22d3ee', 2);
+      // Draw Sensor 2 line
+      drawLineSeries(ctx, s2Pressures, minP, maxP, padL, padT, chartW, chartH, '#60a5fa', 1.8);
+
+      // Current Cycle Indicator Dot
+      const curX = padL + (currentCycle / 7) * chartW;
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(curX, padT);
+      ctx.lineTo(curX, padT + chartH);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawDetectionChart() {
+      if (!detectionCanvas || !currentScenario) return;
+      const rect = detectionCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const ctx = detectionCtx;
+
+      ctx.save();
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 36, padR = 16, padT = 16, padB = 22;
+      const chartW = w - padL - padR;
+      const chartH = h - padT - padB;
+
+      const res = currentScenario.results[currentSensorCount];
+      const isPlain = (chartMetricMode === 'plain');
+      
+      const series = isPlain ? (res.plain_d_series || [0.5]) : (res.d_series || [0.4]);
+      const thr = isPlain ? (res.plain_threshold || 1.65) : (res.threshold || 1.10);
+      const detCycle = isPlain ? res.plain_detected_cycle : res.detected_cycle;
+
+      const maxVal = Math.max(2.6, Math.max(...series) * 1.25);
+
+      // Y-Axis
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'right';
+
+      for (let i = 0; i <= 3; i++) {
+        const val = (i / 3) * maxVal;
+        const y = padT + chartH - (i / 3) * chartH;
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+        ctx.fillText(val.toFixed(1), padL - 6, y + 3);
+      }
+
+      // X-Axis Labels
+      ctx.textAlign = 'center';
+      for (let c = 0; c < 8; c++) {
+        const x = padL + (c / 7) * chartW;
+        ctx.fillText('C' + c, x, h - 4);
+      }
+
+      // Dotted Threshold Line
+      const thrY = padT + chartH - (thr / maxVal) * chartH;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padL, thrY);
+      ctx.lineTo(w - padR, thrY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#f59e0b';
+      ctx.textAlign = 'right';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillText(`THR ${thr.toFixed(2)}`, w - padR, thrY - 4);
+
+      // Detection Series Line
+      const lineColor = isPlain ? '#fbbf24' : '#22d3ee';
+      drawLineSeries(ctx, series, 0, maxVal, padL, padT, chartW, chartH, lineColor, 2.5);
+
+      // Detection Flag Marker (if detected)
+      if (detCycle !== null && detCycle !== undefined) {
+        const detX = padL + (detCycle / 7) * chartW;
+        const detY = padT + chartH - (series[detCycle] / maxVal) * chartH;
+
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        ctx.arc(detX, detY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.font = 'bold 9px Inter, sans-serif';
+        ctx.fillStyle = '#f43f5e';
+        ctx.textAlign = 'center';
+        ctx.fillText('DETECT', detX, detY - 8);
+      }
+
+      // Current Cycle Scrubber Bar
+      const curX = padL + (currentCycle / 7) * chartW;
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(curX, padT);
+      ctx.lineTo(curX, padT + chartH);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawLineSeries(ctx, data, minY, maxY, padL, padT, chartW, chartH, color, strokeW) {
+      if (!data || data.length === 0) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = strokeW;
+      ctx.beginPath();
+
+      data.forEach((val, idx) => {
+        const x = padL + (idx / (data.length - 1)) * chartW;
+        const y = padT + chartH - ((val - minY) / (maxY - minY)) * chartH;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Points
+      data.forEach((val, idx) => {
+        const x = padL + (idx / (data.length - 1)) * chartW;
+        const y = padT + chartH - ((val - minY) / (maxY - minY)) * chartH;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+    }
+
+    function setChartMetricMode(mode) {
+      chartMetricMode = mode;
+      document.getElementById('btn-chart-cancelled').classList.toggle('active', mode === 'cancelled');
+      document.getElementById('btn-chart-plain').classList.toggle('active', mode === 'plain');
+      drawDetectionChart();
+    }
+
+    /* -------------------------------------------------------------
+       Controls, Filtering & Selectors
+       ------------------------------------------------------------- */
+    function setSensorCount(countStr) {
+      currentSensorCount = countStr;
+      document.querySelectorAll('[data-sensors]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-sensors') === countStr);
+      });
+      updateSensorsLayer();
+      updateUIForCycle();
+    }
+
+    function setLeakSize(sizeStr) {
+      currentLeakSize = sizeStr;
+      document.querySelectorAll('[data-size]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-size') === sizeStr);
+      });
+      if (currentScenario) {
+        selectScenario(currentScenario.leak_node, sizeStr);
+      }
+    }
+
+    function onPresetSelect(nodeId) {
+      selectScenario(nodeId, currentLeakSize);
+    }
+
+    function onSliderChange(val) {
+      pausePlayback();
+      currentCycle = parseInt(val, 10);
+      updateUIForCycle();
+    }
+
+    function stepCycle(dir) {
+      pausePlayback();
+      currentCycle = Math.max(0, Math.min(7, currentCycle + dir));
+      updateUIForCycle();
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        pausePlayback();
+      } else {
+        startPlayback();
+      }
+    }
+
+    function startPlayback() {
+      isPlaying = true;
+      document.getElementById('icon-play').style.display = 'none';
+      document.getElementById('icon-pause').style.display = 'block';
+
+      if (currentCycle >= 7) currentCycle = 0;
+
+      playIntervalId = setInterval(() => {
+        if (currentCycle < 7) {
+          currentCycle++;
+          updateUIForCycle();
+        } else {
+          pausePlayback();
+        }
+      }, playSpeedMs);
+    }
+
+    function pausePlayback() {
+      isPlaying = false;
+      document.getElementById('icon-play').style.display = 'block';
+      document.getElementById('icon-pause').style.display = 'none';
+      if (playIntervalId) {
+        clearInterval(playIntervalId);
+        playIntervalId = null;
+      }
+    }
+
+    function setPlaySpeed(ms) {
+      playSpeedMs = parseInt(ms, 10);
+      if (isPlaying) {
+        pausePlayback();
+        startPlayback();
+      }
+    }
+
+    function focusNode(nodeId) {
+      if (!networkData) return;
+      const node = networkData.nodes.find(n => n.id === nodeId);
+      if (!node) return;
+
+      // Animate pan towards node
+      mapPanX = 500 - node.x * mapZoom;
+      mapPanY = 310 - node.y * mapZoom;
+      applyMapTransform();
+
+      // Flash highlight
+      const el = document.getElementById(`node-${nodeId}`);
+      if (el) {
+        el.setAttribute('r', '12');
+        el.setAttribute('fill', '#f59e0b');
+        setTimeout(() => {
+          el.setAttribute('r', '5');
+          el.setAttribute('fill', '#334e7a');
+        }, 1200);
+      }
+    }
+
+    /* -------------------------------------------------------------
+       SVG Pan and Zoom Navigation
+       ------------------------------------------------------------- */
+    function setupSvgInteractions() {
+      const container = document.getElementById('svg-container');
+
+      container.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'circle' || e.target.tagName === 'line') return;
+        isPanning = true;
+        panStartX = e.clientX - mapPanX;
+        panStartY = e.clientY - mapPanY;
+        container.classList.add('panning');
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        mapPanX = e.clientX - panStartX;
+        mapPanY = e.clientY - panStartY;
+        applyMapTransform();
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isPanning) {
+          isPanning = false;
+          container.classList.remove('panning');
+        }
+      });
+
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.1 : 0.9;
+        zoomMap(factor);
+      });
+    }
+
+    function zoomMap(factor) {
+      mapZoom = Math.max(0.5, Math.min(3.5, mapZoom * factor));
+      applyMapTransform();
+    }
+
+    function resetMapView() {
+      mapZoom = 1.0;
+      mapPanX = 0;
+      mapPanY = 0;
+      applyMapTransform();
+    }
+
+    function applyMapTransform() {
+      const g = document.getElementById('map-zoom-group');
+      if (g) {
+        g.setAttribute('transform', `translate(${mapPanX}, ${mapPanY}) scale(${mapZoom})`);
+      }
+    }
+
+    /* -------------------------------------------------------------
+       Tooltips
+       ------------------------------------------------------------- */
+    function showTooltip(e, html) {
+      const tt = document.getElementById('map-tooltip');
+      const ws = document.getElementById('map-workspace').getBoundingClientRect();
+      tt.innerHTML = html;
+      tt.style.display = 'block';
+      tt.style.left = (e.clientX - ws.left) + 'px';
+      tt.style.top = (e.clientY - ws.top) + 'px';
+    }
+
+    function hideTooltip() {
+      const tt = document.getElementById('map-tooltip');
+      tt.style.display = 'none';
+    }
+
+    /* -------------------------------------------------------------
+       Presentation Slides Modal & Automated Demo Tour
+       ------------------------------------------------------------- */
+    function openPresentationModal() {
+      pausePlayback();
+      document.getElementById('presentation-modal').classList.add('open');
+    }
+
+    function closePresentationModal() {
+      document.getElementById('presentation-modal').classList.remove('open');
+    }
+
+    function switchSlideTab(idx) {
+      document.querySelectorAll('.slide-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === idx);
+      });
+      document.querySelectorAll('.slide-content-pane').forEach((pane, i) => {
+        pane.classList.toggle('active', i === idx);
+      });
+    }
+
+    async function startAutomatedDemoTour() {
+      closePresentationModal();
+      
+      // Tour sequence:
+      // 1. Reset map and select J-22 medium leak at 20 sensors
+      resetMapView();
+      setSensorCount('20');
+      setLeakSize('medium');
+      await selectScenario('J-22', 'medium');
+
+      // 2. Play cycles 0 to 4
+      currentCycle = 0;
+      updateUIForCycle();
+      startPlayback();
+
+      // Wait until cycle 4
+      const tourInterval = setInterval(() => {
+        if (currentCycle >= 4) {
+          pausePlayback();
+          clearInterval(tourInterval);
+
+          // 3. Reveal true leak after 1.5 seconds
+          setTimeout(() => {
+            if (!isLeakRevealed) toggleRevealLeak();
+
+            // 4. Demonstrate sensor degradation after 2.5 seconds (switch 20 -> 5)
+            setTimeout(() => {
+              setSensorCount('5');
+            }, 2500);
+
+          }, 1500);
+        }
+      }, 500);
+    }
+  </script>
+</body>
+</html>

@@ -613,10 +613,19 @@
      ------------------------------------------------------------- */
   window.addEventListener("DOMContentLoaded", async () => {
     await loadData();
+    requestAnimationFrame(() => {
+      renderMap();
+      renderRibbon();
+    });
     window.addEventListener("resize", () => {
       renderMap();
       renderRibbon();
     });
+  });
+
+  window.addEventListener("load", () => {
+    renderMap();
+    renderRibbon();
   });
 
   async function loadData() {
@@ -730,9 +739,12 @@
 
     const svg = document.getElementById("map-svg");
     const rect = svg.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-    if (w === 0 || h === 0) return;
+    const w = rect.width || svg.clientWidth;
+    const h = rect.height || svg.clientHeight;
+    if (w === 0 || h === 0) {
+      requestAnimationFrame(renderMap);
+      return;
+    }
 
     // Coordinate normalization with padding
     const xs = network.nodes.map(n => n.x);
@@ -974,9 +986,12 @@
   function renderRibbon() {
     const svg = document.getElementById("ribbon-svg");
     const rect = svg.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-    if (w === 0 || h === 0) return;
+    const w = rect.width || svg.clientWidth;
+    const h = rect.height || svg.clientHeight;
+    if (w === 0 || h === 0) {
+      requestAnimationFrame(renderRibbon);
+      return;
+    }
 
     svg.innerHTML = "";
 

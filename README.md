@@ -40,6 +40,22 @@ Boond introduces two complementary algorithms:
 
 ```
 Boond/
+├── src/                 # Plan A: Scientific modeling & simulation pipeline
+│   ├── config.py        # Supply windows (06-09h, 18-21h), leak sizes, PDD params
+│   ├── simulate.py      # NetworkX hydraulic simulator with PDD zero head compliance
+│   ├── generate.py      # 1,000 baseline & multi-cycle burst scenario generation
+│   ├── features.py      # Demand cancellation residual (r_c) & test statistic (d)
+│   ├── detect.py        # Multi-cycle persistence filter calibrated at 5% FAR
+│   ├── localise.py      # Signature Cosine similarity ranking & hop distance metrics
+│   ├── sensors.py       # Nested sensor placement (5, 10, 20) & greedy suggestion
+│   ├── export.py        # Deployment artifact exporter for web and AWS Lambda
+│   └── evaluate.py      # End-to-end benchmark suite generating Tables A, B, C & figures
+├── results/             # Experimental results & figures
+│   ├── results.md       # Tables A, B, C, Go/No-Go decision & engineering boundaries
+│   ├── figure1_demand_masking.svg      # Demand masking vs leak pressure drop
+│   └── figure2_detection_vs_sensors.svg # Detection rate vs sensor density
+├── lambda/
+│   └── model.npz        # NumPy-only lightweight model for AWS Lambda runtime
 ├── web/
 │   ├── index.html       # Single-page complete UI (inline CSS/JS, 1080p optimized)
 │   ├── network.json     # Network topology (60 nodes, 119 pipes, nested sensor sets)
@@ -49,19 +65,30 @@ Boond/
 ├── video/
 │   ├── SCRIPT.md        # Exact 3-minute second-by-second voiceover & recording script
 │   └── slides.html      # 1080p interactive presentation slide deck
-├── generate_mock_data.py # Script generating contract-compliant network and scenarios
 ├── index.html           # Root redirect to web/index.html
 └── README.md            # Project documentation and deployment guide
 ```
 
 ---
 
-## 4. How to Run Locally
+## 4. How to Run
 
-You can run the web dashboard locally with zero external dependencies:
+### Execute Plan A Scientific Modeling Pipeline
+To regenerate the 1,000 baseline runs, simulate leak sequences, evaluate detection/localisation, and export contract artifacts:
 
 ```bash
-# Option 1: Python HTTP server
+cd Boond
+python -m src.evaluate
+```
+
+This updates:
+1. `web/network.json` & `web/scenarios.json`
+2. `lambda/model.npz` (NumPy-only AWS Lambda package)
+3. `results/results.md` (Tables A, B, C benchmarks and Go/No-Go verification)
+4. `results/figure1_demand_masking.svg` & `results/figure2_detection_vs_sensors.svg`
+
+### Run Web Dashboard Locally
+```bash
 cd Boond
 python -m http.server 8080 --directory web
 

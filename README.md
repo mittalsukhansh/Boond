@@ -55,7 +55,13 @@ Boond/
 │   ├── figure1_demand_masking.svg      # Demand masking vs leak pressure drop
 │   └── figure2_detection_vs_sensors.svg # Detection rate vs sensor density
 ├── lambda/
-│   └── model.npz        # NumPy-only lightweight model for AWS Lambda runtime
+│   ├── handler.py       # AWS Lambda entrypoint (/network, /scenario, /health)
+│   ├── model.npz        # NumPy-only lightweight model for AWS Lambda runtime
+│   └── data/            # Bundled fallback datasets for zero-cold-start resilience
+├── infra/               # AWS Serverless Infrastructure (SAM)
+│   ├── template.yaml    # AWS SAM template (S3, Lambda Python 3.12, HTTP API v2)
+│   ├── architecture.svg # 1920x1080 AWS cloud architecture diagram
+│   └── README.md        # Step-by-step deployment and verification guide
 ├── web/
 │   ├── index.html       # Single-page complete UI (inline CSS/JS, 1080p optimized)
 │   ├── network.json     # Network topology (60 nodes, 119 pipes, nested sensor sets)
@@ -103,10 +109,15 @@ Or open `Boond/web/index.html` directly in any modern web browser (Edge, Chrome,
 ## 5. AWS Cloud Architecture
 
 Boond is built with serverless cloud infrastructure on AWS for low operational costs:
+
+![Boond AWS Serverless Architecture](infra/architecture.svg)
+
 - **AWS Amplify:** Global static hosting of `web/index.html` with zero build step.
 - **Amazon API Gateway HTTP API:** Sub-50ms REST API routing `GET /network` and `GET /scenario?node={id}&size={size}`.
 - **AWS Lambda (Python 3.12):** Stateless microservice evaluating demand cancellation and signature cosine similarity ranking.
 - **Amazon S3:** Private bucket housing network topology and WNTR simulation datasets.
+
+For deployment instructions and AWS SAM templates, see the [AWS Infrastructure Guide](infra/README.md).
 
 ---
 

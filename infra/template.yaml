@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Boond - Leak Detection for Intermittent Water Supply (IWS)
+  AWS Serverless Infrastructure Stack: S3, Lambda (Python 3.12), and HTTP API Gateway.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - prod
+    Description: Deployment environment
+
+Resources:
+  # ---------------------------------------------------------------------------
+  # 1. Amazon S3: Private Storage for Network Topology & Simulation Datasets
+  # ---------------------------------------------------------------------------
+  BoondDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'boond-data-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  # ---------------------------------------------------------------------------
+  # 2. Amazon API Gateway HTTP API (Payload format v2.0 with CORS)
+  # ---------------------------------------------------------------------------
+  BoondHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Environment
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Requested-With
+        AllowOrigins:
+          - '*'
+        MaxAge: 3600
+
+  # ---------------------------------------------------------------------------
+  # 3. AWS Lambda Function: Serverless Backend & Inference Router
+  # ---------------------------------------------------------------------------
+  BoondFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'boond-api-handler-${Environment}'
+      CodeUri: ../lambda/
+      Handler: handler.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 10
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref BoondDataBucket
+          S3_NETWORK_KEY: network.json
+          S3_SCENARIOS_KEY: scenarios.json
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub 'boond-data-${AWS::AccountId}-${AWS::Region}'
+      Events:
+        RootEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref BoondHttpApi
+            Path: /
+            Method: GET
+        HealthEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref BoondHttpApi
+            Path: /health
+            Method: GET
+        NetworkEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref BoondHttpApi
+            Path: /network
+            Method: GET
+        ScenarioEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref BoondHttpApi
+            Path: /scenario
+            Method: GET
+
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+Outputs:
+  ApiEndpoint:
+    Description: Base HTTP API Endpoint URL for Frontend API_BASE
+    Value: !Sub 'https://${BoondHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+  S3BucketName:
+    Description: Name of S3 storage bucket for simulation data
+    Value: !Ref BoondDataBucket
+  LambdaFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt BoondFunction.Arn

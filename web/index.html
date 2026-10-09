@@ -3,2389 +3,1468 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOOND — Smart Water Grid & Leak Detection Dashboard</title>
-  
-  <!-- Modern SaaS Typography from Google Fonts -->
+  <title>Boond — Leak detection for intermittent supply</title>
+
+  <!-- Google Fonts: Public Sans only (utilitarian civic type) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <!-- Fallback local script tags for file:// protocol support -->
+  <!-- Local fallback scripts if running via file:// without web server -->
   <script src="network.js"></script>
   <script src="scenarios.js"></script>
 
   <style>
     /* -------------------------------------------------------------
-       Design System: Haulix-Inspired Logistics & Operations Dashboard
-       Ultra-Clean Cards, Soft 1px Subtle Borders, High-Contrast Data
+       Design tokens (Strict adherence to section 4)
        ------------------------------------------------------------- */
     :root {
-      --bg-app: #080d1a;
-      --bg-sidebar: #0b1122;
-      --bg-card: #0f182c;
-      --bg-card-hover: #15223c;
-      --bg-card-elevated: #182744;
-      --bg-subtle: rgba(255, 255, 255, 0.03);
+      --concrete: #E3E5E0;
+      --plaster: #F4F5F1;
+      --plaster-dark: #E6E8E2;
+      --ink: #17211D;
+      --cast-iron: #59635E;
+      --verdigris: #2E7D6B;
+      --brass: #B58A2C;
+      --oxide: #A63F1D;
+      --sand: #E8D9B5;
 
-      /* Clean subtle border tokens - zero harsh lines */
-      --border-subtle: rgba(255, 255, 255, 0.07);
-      --border-card: rgba(255, 255, 255, 0.09);
-      --border-focus: rgba(56, 189, 248, 0.35);
+      /* Ruled lines */
+      --rule: #D3D6CE;
+      --rule-strong: #A8AEA3;
 
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
+      /* Heatmap ramp: 5 flat steps */
+      --heat-1: #EFE3C2;
+      --heat-2: #E0B96E;
+      --heat-3: #C98A3A;
+      --heat-4: #B05A22;
+      --heat-5: #7E2A12;
 
-      --blue-primary: #2563eb;
-      --blue-hover: #1d4ed8;
-      --cyan-accent: #38bdf8;
-      --cyan-glow: rgba(56, 189, 248, 0.25);
-
-      --emerald: #10b981;
-      --emerald-bg: rgba(16, 185, 129, 0.12);
-      
-      --amber: #f59e0b;
-      --amber-bg: rgba(245, 158, 11, 0.12);
-
-      --rose: #f43f5e;
-      --rose-bg: rgba(244, 63, 94, 0.12);
-
-      --purple: #c084fc;
-      --purple-bg: rgba(192, 132, 252, 0.12);
-
-      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: 'JetBrains Mono', Consolas, monospace;
-
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-full: 9999px;
-
-      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      --font-stack: "Public Sans", system-ui, "Segoe UI", Roboto, sans-serif;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      background-color: var(--concrete);
+      color: var(--ink);
+      font-family: var(--font-stack);
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 400;
+      overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    body {
-      background-color: var(--bg-app);
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      font-size: 13.5px;
-      line-height: 1.5;
-      overflow: hidden;
+    /* Tabular figures for all numbers */
+    .num, [data-num] {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    /* App frame: single screen, left-aligned, no cards */
+    .app-frame {
+      display: flex;
+      flex-direction: column;
       height: 100vh;
       width: 100vw;
-      display: flex;
-      user-select: none;
     }
 
     /* -------------------------------------------------------------
-       Left Sidebar Navigation (Haulix Style)
+       Top bar: single ruled line
        ------------------------------------------------------------- */
-    aside.sidebar {
-      width: 230px;
-      min-width: 230px;
-      background: var(--bg-sidebar);
-      border-right: 1px solid var(--border-subtle);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 20px 16px;
-      z-index: 40;
-    }
-
-    .brand-wrap {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 0 6px 20px 6px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .brand-logo-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: var(--radius-md);
-      background: linear-gradient(135deg, #0284c7, #06b6d4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 18px var(--cyan-glow);
-      flex-shrink: 0;
-    }
-
-    .brand-logo-icon svg {
-      width: 20px;
-      height: 20px;
-      fill: #ffffff;
-    }
-
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand-name {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(90deg, #38bdf8, #818cf8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      line-height: 1.2;
-    }
-
-    .brand-sub {
-      font-size: 10.5px;
-      color: var(--text-muted);
-      font-weight: 600;
-      letter-spacing: 0.3px;
-    }
-
-    .nav-group-title {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-muted);
-      padding: 16px 8px 8px 8px;
-    }
-
-    .nav-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      list-style: none;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 9px 12px;
-      border-radius: var(--radius-md);
-      color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      text-decoration: none;
-    }
-
-    .nav-item:hover {
-      background: var(--bg-subtle);
-      color: var(--text-primary);
-    }
-
-    .nav-item.active {
-      background: linear-gradient(90deg, rgba(37, 99, 235, 0.18), rgba(56, 189, 248, 0.08));
-      color: var(--cyan-accent);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-    }
-
-    .nav-item svg {
-      width: 17px;
-      height: 17px;
-      stroke-width: 2;
-      flex-shrink: 0;
-    }
-
-    .sidebar-footer-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .footer-card-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .footer-card-desc {
-      font-size: 11px;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
-
-    .btn-sidebar-deck {
-      width: 100%;
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      color: #fff;
-      border: none;
-      font-size: 11.5px;
-      font-weight: 700;
-      padding: 7px 10px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: filter 0.2s;
-    }
-
-    .btn-sidebar-deck:hover {
-      filter: brightness(1.1);
-    }
-
-    /* -------------------------------------------------------------
-       Main Content Container
-       ------------------------------------------------------------- */
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: var(--bg-app);
-    }
-
-    /* Top Bar */
-    header.header-bar {
-      height: 64px;
-      min-height: 64px;
-      border-bottom: 1px solid var(--border-subtle);
+    header.masthead {
+      height: 48px;
+      min-height: 48px;
+      background: var(--plaster);
+      border-bottom: 1px solid var(--rule);
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 24px;
-      background: rgba(11, 17, 34, 0.6);
-      backdrop-filter: blur(16px);
-      z-index: 30;
+      flex-shrink: 0;
     }
 
-    .header-breadcrumb {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .breadcrumb-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .breadcrumb-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    /* Central Filters Hub (Haulix Style) */
-    .header-filters {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .filter-pill {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 3px 5px;
-    }
-
-    .filter-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 0 6px;
-    }
-
-    .btn-filter-opt {
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      font-family: var(--font-sans);
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 4px 9px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .btn-filter-opt:hover {
-      color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .btn-filter-opt.active {
-      background: var(--blue-primary);
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
-    }
-
-    .preset-select {
-      background: transparent;
-      border: none;
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      font-size: 12px;
-      font-weight: 600;
-      outline: none;
-      cursor: pointer;
-      padding: 4px 6px;
-    }
-
-    .preset-select option {
-      background: #0f182c;
-      color: #fff;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .badge-sim {
-      background: var(--amber-bg);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: var(--amber);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: var(--radius-full);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      letter-spacing: 0.5px;
-    }
-
-    .badge-sim::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--amber);
-      box-shadow: 0 0 6px var(--amber);
-    }
-
-    .btn-reveal-action {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      font-size: 12px;
-      font-weight: 600;
-      padding: 6px 14px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      transition: all 0.2s ease;
-    }
-
-    .btn-reveal-action:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-reveal-action.revealed {
-      background: var(--rose-bg);
-      border-color: rgba(244, 63, 94, 0.4);
-      color: var(--rose);
-    }
-
-    /* -------------------------------------------------------------
-       Top 4 KPI Metric Summary Cards (Haulix Style)
-       ------------------------------------------------------------- */
-    .kpi-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      padding: 16px 24px 0 24px;
-    }
-
-    .kpi-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-md);
-      padding: 12px 16px;
-      box-shadow: var(--shadow-card);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .kpi-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .kpi-val {
-      font-size: 19px;
-      font-weight: 800;
-      color: var(--text-primary);
-      letter-spacing: -0.3px;
+    .masthead-left {
       display: flex;
       align-items: baseline;
-      gap: 6px;
+      gap: 16px;
     }
 
-    .kpi-sub {
-      font-size: 11px;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .project-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.2px;
     }
 
-    .kpi-pill {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: var(--radius-sm);
+    .project-subtitle {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--cast-iron);
     }
 
-    .kpi-pill.emerald { background: var(--emerald-bg); color: var(--emerald); }
-    .kpi-pill.amber { background: var(--amber-bg); color: var(--amber); }
-    .kpi-pill.rose { background: var(--rose-bg); color: var(--rose); }
+    .simulated-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      border-radius: 999px;
+      padding: 2px 10px;
+      background: transparent;
+      line-height: 1.4;
+    }
 
     /* -------------------------------------------------------------
-       Dashboard Workspace (Map on Left, Analytics Rail on Right)
+       Middle section: Map (62%) + Ruled Column (38%)
        ------------------------------------------------------------- */
-    .dashboard-body {
+    .middle-section {
       flex: 1;
-      display: grid;
-      grid-template-columns: 58% 42%;
-      gap: 16px;
-      padding: 16px 24px;
-      overflow: hidden;
+      display: flex;
+      min-height: 0;
+      border-bottom: 1px solid var(--rule);
     }
 
-    /* Left Map Card */
-    .map-card-wrapper {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-card);
+    /* Map canvas: plaster surface, semantic radius 0 */
+    .map-pane {
+      flex: 62;
+      position: relative;
+      background: var(--plaster);
+      border-right: 1px solid var(--rule);
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      position: relative;
     }
 
-    .map-header-bar {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(15, 24, 44, 0.7);
+    .map-instructions {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      font-size: 14px;
+      color: var(--cast-iron);
+      z-index: 5;
+      pointer-events: none;
     }
 
-    .map-header-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .map-header-pill {
-      font-size: 11px;
-      color: var(--cyan-accent);
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.2);
-      padding: 2px 8px;
-      border-radius: var(--radius-sm);
-    }
-
-    .map-canvas-container {
+    .map-svg-wrap {
       flex: 1;
-      position: relative;
-      background: radial-gradient(circle at 50% 50%, #0d172e 0%, #080d1a 100%);
-      cursor: grab;
-      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
     }
 
-    .map-canvas-container.panning {
-      cursor: grabbing;
-    }
-
-    svg#network-svg {
+    svg#map-svg {
       width: 100%;
       height: 100%;
       display: block;
     }
 
-    /* Map HUD overlay */
-    .map-hud-controls {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      display: flex;
-      gap: 4px;
-      background: rgba(11, 17, 34, 0.85);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 3px;
-      z-index: 10;
-    }
-
-    .btn-map-control {
-      width: 28px;
-      height: 28px;
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s ease;
-    }
-
-    .btn-map-control:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-primary);
-    }
-
-    .map-bottom-legend {
+    /* Heatmap legend at map corner */
+    .map-legend {
       position: absolute;
       bottom: 12px;
-      left: 14px;
-      background: rgba(11, 17, 34, 0.85);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 6px 12px;
+      left: 16px;
+      background: var(--plaster);
+      border: 1px solid var(--rule);
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 5;
+    }
+
+    .legend-title {
+      font-size: 12px;
+      color: var(--cast-iron);
+      margin-bottom: 2px;
+    }
+
+    .legend-scale {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 3px;
+    }
+
+    .scale-box {
+      width: 16px;
+      height: 10px;
+    }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
       font-size: 11px;
-      color: var(--text-secondary);
-      z-index: 10;
+      color: var(--cast-iron);
+      margin-top: 2px;
     }
 
-    .legend-bullet {
+    /* Map tooltip */
+    #map-tooltip {
+      position: absolute;
+      display: none;
+      pointer-events: none;
+      background: var(--ink);
+      color: var(--plaster);
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 3px;
+      z-index: 100;
+      transform: translate(-50%, -130%);
+      white-space: nowrap;
+    }
+
+    /* -------------------------------------------------------------
+       Side column: continuous column with ruled sections
+       ------------------------------------------------------------- */
+    .side-pane {
+      flex: 38;
+      background: var(--plaster);
+      overflow-y: auto;
+      padding: 0;
       display: flex;
-      align-items: center;
-      gap: 5px;
+      flex-direction: column;
+      min-width: 0;
     }
 
-    .dot-bullet {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-
-    .dot-bullet.sensor { background: var(--cyan-accent); box-shadow: 0 0 6px var(--cyan-accent); }
-    .dot-bullet.candidate { background: var(--amber); }
-    .dot-bullet.leak { background: var(--rose); }
-
-    /* Right Rail Container */
-    .rail-container {
+    .ruled-section {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--rule);
       display: flex;
       flex-direction: column;
       gap: 12px;
-      overflow-y: auto;
-      padding-right: 2px;
     }
 
-    .rail-container::-webkit-scrollbar { width: 5px; }
-    .rail-container::-webkit-scrollbar-track { background: transparent; }
-    .rail-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-
-    /* Timeline Scrubber Card */
-    .rail-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      padding: 14px 16px;
-      box-shadow: var(--shadow-card);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .ruled-section:last-child {
+      border-bottom: none;
     }
 
-    .rail-card-header {
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .control-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
     }
 
-    .rail-card-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
+    .control-label {
+      font-size: 14px;
+      color: var(--cast-iron);
+    }
+
+    /* Semantic 3px radius buttons, flat tokens */
+    .button-group {
+      display: inline-flex;
+      border: 1px solid var(--rule-strong);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .btn-choice {
+      background: var(--plaster);
+      border: none;
+      border-right: 1px solid var(--rule-strong);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+
+    .btn-choice:last-child {
+      border-right: none;
+    }
+
+    .btn-choice:hover {
+      background: var(--concrete);
+    }
+
+    .btn-choice.active {
+      background: var(--ink);
+      color: var(--plaster);
+    }
+
+    .btn-choice:focus-visible, .btn-action:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
+
+    /* Status display */
+    .status-text {
+      font-size: 15px;
+      line-height: 1.4;
+      color: var(--ink);
+      padding: 4px 0;
+    }
+
+    .status-text.oxide {
+      color: var(--oxide);
+      font-weight: 600;
+    }
+
+    /* Candidates table */
+    .candidate-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 4px 0;
+    }
+
+    .candidate-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--concrete);
     }
 
-    .timeline-scrubber-row {
+    .candidate-rank {
+      color: var(--cast-iron);
+      width: 24px;
+    }
+
+    .candidate-node {
+      font-weight: 500;
+      color: var(--ink);
+      width: 70px;
+    }
+
+    .candidate-score {
+      font-variant-numeric: tabular-nums;
+      color: var(--cast-iron);
+    }
+
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      align-self: flex-start;
+      margin-top: 6px;
+    }
+
+    .btn-action:hover {
+      background: var(--concrete);
+    }
+
+    .verdict-line {
+      font-size: 14px;
+      margin-top: 6px;
+      color: var(--ink);
+    }
+
+    .verdict-line.oxide {
+      color: var(--oxide);
+    }
+
+    .next-sensor-note {
+      font-size: 14px;
+      color: var(--brass);
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    /* -------------------------------------------------------------
+       Signature element: Supply Cycle Ribbon (28% of height)
+       Engineering strip chart, full width
+       ------------------------------------------------------------- */
+    .ribbon-pane {
+      height: 28vh;
+      min-height: 190px;
+      max-height: 260px;
+      background: var(--plaster);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .ribbon-toolbar {
+      height: 32px;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 13px;
+      color: var(--cast-iron);
+      background: var(--concrete);
+    }
+
+    .ribbon-controls {
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .btn-scrub-play {
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      color: #fff;
-      border: none;
-      width: 34px;
-      height: 34px;
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
-      flex-shrink: 0;
-    }
-
-    .btn-scrub-step {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      width: 30px;
-      height: 30px;
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    .btn-scrub-step:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-
-    .timeline-range {
-      flex: 1;
-      height: 6px;
-      -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.08);
+    .btn-tape {
+      background: var(--plaster);
+      border: 1px solid var(--rule-strong);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 2px 8px;
       border-radius: 3px;
-      outline: none;
       cursor: pointer;
     }
 
-    .timeline-range::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: var(--cyan-accent);
-      box-shadow: 0 0 8px var(--cyan-accent);
-      cursor: pointer;
+    .btn-tape:hover {
+      background: var(--concrete);
     }
 
-    .timeline-phases-bar {
-      display: grid;
-      grid-template-columns: 3fr 1fr 4fr;
-      gap: 4px;
-      margin-top: -2px;
-    }
-
-    .phase-pill {
-      font-size: 9.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      padding: 3px 6px;
-      border-radius: 4px;
-      text-align: center;
-    }
-
-    .phase-pill.green { background: var(--emerald-bg); color: var(--emerald); }
-    .phase-pill.yellow { background: var(--amber-bg); color: var(--amber); }
-    .phase-pill.red { background: var(--rose-bg); color: var(--rose); }
-
-    /* Verdict Card */
-    .verdict-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      padding: 14px 16px;
-      box-shadow: var(--shadow-card);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      transition: all 0.3s ease;
-    }
-
-    .verdict-box.state-normal { border-left: 4px solid var(--emerald); }
-    .verdict-box.state-evaluating { border-left: 4px solid var(--amber); background: rgba(245, 158, 11, 0.06); }
-    .verdict-box.state-detected { border-left: 4px solid var(--rose); background: rgba(244, 63, 94, 0.08); }
-    .verdict-box.state-undetected { border-left: 4px solid var(--amber); }
-
-    .verdict-main {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .verdict-status-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .verdict-box.state-normal .verdict-status-icon { background: var(--emerald-bg); color: var(--emerald); }
-    .verdict-box.state-evaluating .verdict-status-icon { background: var(--amber-bg); color: var(--amber); }
-    .verdict-box.state-detected .verdict-status-icon { background: var(--rose-bg); color: var(--rose); animation: pulseAlert 1.5s infinite; }
-
-    .verdict-headline {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: var(--text-primary);
-    }
-
-    .verdict-caption {
-      font-size: 11.5px;
-      color: var(--text-secondary);
-    }
-
-    .verdict-score-badge {
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 4px 10px;
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    .verdict-score-num {
-      font-family: var(--font-mono);
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--cyan-accent);
-    }
-
-    /* Charts in Rail */
-    .chart-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      padding: 12px 16px;
-      box-shadow: var(--shadow-card);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .chart-box-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .chart-box-title {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .canvas-wrap {
+    .ribbon-svg-wrap {
+      flex: 1;
       width: 100%;
-      height: 110px;
-      position: relative;
+      height: 100%;
     }
 
-    canvas.rail-chart {
-      width: 100% !important;
-      height: 100% !important;
+    svg#ribbon-svg {
+      width: 100%;
+      height: 100%;
       display: block;
     }
 
-    /* Comparison switch */
-    .toggle-switch-pills {
-      display: inline-flex;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 2px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border-subtle);
-    }
-
-    .toggle-switch-pills button {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 10.5px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .toggle-switch-pills button.active {
-      background: var(--blue-primary);
-      color: #fff;
-    }
-
-    /* Suspects Card */
-    .suspects-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      padding: 12px 16px;
-      box-shadow: var(--shadow-card);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .suspect-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    .suspect-table th {
-      color: var(--text-muted);
-      font-size: 10.5px;
-      font-weight: 600;
-      text-align: left;
-      padding: 4px 6px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .suspect-table td {
-      padding: 6px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-      color: var(--text-secondary);
-    }
-
-    .suspect-table tr:last-child td { border-bottom: none; }
-
-    .node-tag {
-      font-family: var(--font-mono);
-      font-weight: 700;
-      color: var(--text-primary);
-      padding: 2px 6px;
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 4px;
-    }
-
-    .bar-track {
-      flex: 1;
-      height: 5px;
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #06b6d4, #f59e0b);
-      border-radius: 3px;
-    }
-
-    .btn-locate {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-subtle);
-      color: var(--cyan-accent);
-      font-size: 10.5px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-    }
-
-    .btn-locate:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-
-    /* Modal Backdrop */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(4, 7, 13, 0.85);
-      backdrop-filter: blur(14px);
-      z-index: 1000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    .modal-backdrop.open { display: flex; }
-
-    .modal-card {
-      width: 100%;
-      max-width: 960px;
-      max-height: 85vh;
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .modal-header {
-      padding: 16px 24px;
-      background: rgba(255, 255, 255, 0.02);
-      border-bottom: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .modal-title {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .modal-close-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 20px;
-      cursor: pointer;
-      padding: 4px 8px;
-    }
-
-    .modal-body {
-      padding: 24px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      font-size: 13.5px;
-      color: var(--text-secondary);
-    }
-
-    .slide-tabs {
-      display: flex;
-      gap: 8px;
-      border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 12px;
-    }
-
-    .slide-tab {
-      background: transparent;
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      padding: 6px 14px;
-      border-radius: var(--radius-md);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .slide-tab.active {
-      background: var(--blue-primary);
-      border-color: var(--blue-primary);
-      color: #fff;
-    }
-
-    .slide-pane {
-      display: none;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .slide-pane.active { display: flex; }
-
-    @keyframes pulseAlert {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
+    /* Responsive under 900px */
+    @media (max-width: 900px) {
+      body {
+        overflow-y: auto;
+      }
+      .app-frame {
+        height: auto;
+      }
+      .middle-section {
+        flex-direction: column;
+      }
+      .map-pane {
+        height: 50vh;
+      }
+      .side-pane {
+        height: auto;
+      }
+      .ribbon-pane {
+        height: 240px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- ============================================================
-       SIDEBAR NAVIGATION (Haulix Architecture)
-       ============================================================ -->
-  <aside class="sidebar">
+<div class="app-frame">
+
+  <!-- Top bar: single line, strictly no gradients -->
+  <header class="masthead">
+    <div class="masthead-left">
+      <span class="project-title">Boond</span>
+      <span class="project-subtitle">Leak detection, intermittent supply</span>
+    </div>
     <div>
-      <div class="brand-wrap">
-        <div class="brand-logo-icon">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <span class="brand-name">BOOND</span>
-          <span class="brand-sub">IWS Smart Grid Analytics</span>
-        </div>
-      </div>
-
-      <div class="nav-group-title">Command Center</div>
-      <ul class="nav-list">
-        <li>
-          <a href="#" class="nav-item active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            <span>Network Grid</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="nav-item" onclick="focusPressureChart(); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-            </svg>
-            <span>Pressure Telemetry</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="nav-item" onclick="focusCandidates(); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-            <span>Incident Leak Log</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="nav-item" onclick="openPresentationModal(); switchSlideTab(4); return false;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
-            </svg>
-            <span>AWS Cloud Setup</span>
-          </a>
-        </li>
-      </ul>
+      <span class="simulated-badge">Simulated data</span>
     </div>
+  </header>
 
-    <!-- Sidebar Footer Card -->
-    <div class="sidebar-footer-card">
-      <div class="footer-card-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-accent)" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polygon points="10 8 16 12 10 16 10 8"></polygon>
-        </svg>
-        <span>Hackathon Submission</span>
-      </div>
-      <p class="footer-card-desc">
-        Target 3-min video recording. Includes slides and auto-demo.
-      </p>
-      <button class="btn-sidebar-deck" onclick="openPresentationModal()">
-        Launch Video Slides
-      </button>
-    </div>
-  </aside>
-
-  <!-- ============================================================
-       MAIN CONTENT CONTAINER
-       ============================================================ -->
-  <div class="main-content">
+  <!-- Middle section: Map (62%) + Ruled Column (38%) -->
+  <div class="middle-section">
     
-    <!-- Top Header Bar (Haulix Style) -->
-    <header class="header-bar">
-      <div class="header-breadcrumb">
-        <div class="breadcrumb-title">
-          <span>DMA-1 Central Distribution Network</span>
-          <span style="font-size: 11px; color: var(--emerald); font-weight: 700; background: var(--emerald-bg); padding: 2px 8px; border-radius: 4px;">ONLINE</span>
-        </div>
-        <div class="breadcrumb-subtitle">Intermittent Schedule: 06:00-09:00, 18:00-21:00 &bull; WNTR Simulation</div>
-      </div>
-
-      <!-- Central Segmented Filters -->
-      <div class="header-filters">
-        <!-- Scenario Preset -->
-        <div class="filter-pill">
-          <span class="filter-label">Scenario:</span>
-          <select id="scenario-preset-select" class="preset-select" onchange="onPresetSelect(this.value)">
-            <option value="J-22">J-22 &bull; Central Zone (Fast Detect)</option>
-            <option value="J-12">J-12 &bull; North Sector (Benchmark)</option>
-            <option value="J-38">J-38 &bull; Mid Branch (Clear Masking)</option>
-            <option value="J-62">J-62 &bull; South District (Small Leak)</option>
-            <option value="J-45">J-45 &bull; East Perimeter (Localized)</option>
-          </select>
-        </div>
-
-        <!-- Leak Size -->
-        <div class="filter-pill">
-          <span class="filter-label">Leak Size:</span>
-          <button class="btn-filter-opt" data-size="small" onclick="setLeakSize('small')">Small (2.5%)</button>
-          <button class="btn-filter-opt active" data-size="medium" onclick="setLeakSize('medium')">Medium (7.5%)</button>
-          <button class="btn-filter-opt" data-size="large" onclick="setLeakSize('large')">Large (14%)</button>
-        </div>
-
-        <!-- Sensors -->
-        <div class="filter-pill">
-          <span class="filter-label">Sensors:</span>
-          <button class="btn-filter-opt" data-sensors="5" onclick="setSensorCount('5')">5</button>
-          <button class="btn-filter-opt" data-sensors="10" onclick="setSensorCount('10')">10</button>
-          <button class="btn-filter-opt active" data-sensors="20" onclick="setSensorCount('20')">20 (Default)</button>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="header-actions">
-        <div class="badge-sim" title="Validated on EPANET Pressure-Dependent Demand (PDD)">
-          SIMULATED DATA
-        </div>
-
-        <button id="btn-reveal" class="btn-reveal-action" onclick="toggleRevealLeak()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="22" y1="12" x2="18" y2="12"></line>
-            <line x1="6" y1="12" x2="2" y2="12"></line>
-            <line x1="12" y1="6" x2="12" y2="2"></line>
-            <line x1="12" y1="22" x2="12" y2="18"></line>
-          </svg>
-          <span id="reveal-text">Reveal True Leak</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- Top 4 KPI Metric Summary Cards (Haulix Signature Row) -->
-    <div class="kpi-row">
-      <div class="kpi-card">
-        <div class="kpi-top">
-          <span>Grid Topology</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-        </div>
-        <div class="kpi-val" id="kpi-nodes">60 <span style="font-size: 13px; font-weight: 500; color: var(--text-muted);">Junctions</span></div>
-        <div class="kpi-sub">
-          <span>119 Pipes</span> &bull; <span class="kpi-pill emerald">4 DMAs</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-          <span>Active Pressure Sensors</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        </div>
-        <div class="kpi-val" id="kpi-sensors" style="color: var(--cyan-accent);">20 / 20</div>
-        <div class="kpi-sub">
-          <span id="kpi-sensor-density">High Density (100% coverage)</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-          <span>System Health State</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <div class="kpi-val" id="kpi-health" style="color: var(--emerald);">Normal</div>
-        <div class="kpi-sub">
-          <span id="kpi-signal-desc">Demand cancellation active</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-          <span>Localised Suspect Node</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-        </div>
-        <div class="kpi-val" id="kpi-top-node">J-22</div>
-        <div class="kpi-sub">
-          <span>Likelihood: <strong id="kpi-top-score" style="color: var(--amber);">95%</strong></span> &bull; <span>Top Candidate</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Dashboard Workspace -->
-    <div class="dashboard-body">
+    <!-- Map pane -->
+    <div class="map-pane">
+      <div class="map-instructions" id="map-instructions">Click a pipe on the map to start a leak.</div>
       
-      <!-- LEFT: Water Network Map Card -->
-      <div class="map-card-wrapper">
-        <div class="map-header-bar">
-          <div class="map-header-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-accent)" stroke-width="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            <span>Interactive Municipal Water Grid</span>
-            <span class="map-header-pill">Click any node or pipe to inject leak</span>
-          </div>
-        </div>
-
-        <div class="map-canvas-container" id="svg-container">
-          <svg id="network-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <filter id="sensor-glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <filter id="leak-glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            <g id="map-zoom-group">
-              <g id="layer-pipes"></g>
-              <g id="layer-heatmap"></g>
-              <g id="layer-nodes"></g>
-              <g id="layer-sensors"></g>
-              <g id="layer-leak-overlay"></g>
-            </g>
-          </svg>
-
-          <!-- Floating Map Controls -->
-          <div class="map-hud-controls">
-            <button class="btn-map-control" onclick="resetMapView()" title="Reset Zoom">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-              </svg>
-            </button>
-            <button class="btn-map-control" onclick="zoomMap(1.2)" title="Zoom In">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                <line x1="11" y1="8" x2="11" y2="14"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </button>
-            <button class="btn-map-control" onclick="zoomMap(0.8)" title="Zoom Out">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Bottom Legend -->
-          <div class="map-bottom-legend">
-            <div class="legend-bullet">
-              <div class="dot-bullet sensor"></div>
-              <span>Sensor Node</span>
-            </div>
-            <div class="legend-bullet">
-              <div class="dot-bullet candidate"></div>
-              <span>Suspect Heatmap</span>
-            </div>
-            <div class="legend-bullet">
-              <div class="dot-bullet leak"></div>
-              <span>True Leak (Revealed)</span>
-            </div>
-          </div>
-        </div>
-
-        <div id="map-tooltip"></div>
+      <div class="map-svg-wrap">
+        <svg id="map-svg" preserveAspectRatio="xMidYMid meet">
+          <g id="map-pipes"></g>
+          <g id="map-heatmap"></g>
+          <g id="map-junctions"></g>
+          <g id="map-sensors"></g>
+          <g id="map-annotations"></g>
+        </svg>
       </div>
 
-      <!-- RIGHT: Analytics & Dispatch Rail (Haulix Style) -->
-      <div class="rail-container">
-        
-        <!-- Timeline Scrubber Card -->
-        <div class="rail-card">
-          <div class="rail-card-header">
-            <span class="rail-card-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Supply Replay Timeline
-            </span>
-            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--cyan-accent); font-weight: 700;" id="lbl-cycle-num">
-              Cycle 0 (Day 0)
-            </span>
-          </div>
+      <!-- Flat 5-step heatmap legend -->
+      <div class="map-legend">
+        <span class="legend-title">Likelihood</span>
+        <div class="legend-scale">
+          <div class="scale-box" style="background: var(--heat-1)"></div>
+          <div class="scale-box" style="background: var(--heat-2)"></div>
+          <div class="scale-box" style="background: var(--heat-3)"></div>
+          <div class="scale-box" style="background: var(--heat-4)"></div>
+          <div class="scale-box" style="background: var(--heat-5)"></div>
+        </div>
+        <div class="scale-labels">
+          <span>Less likely</span>
+          <span>More likely</span>
+        </div>
+      </div>
 
-          <div class="timeline-scrubber-row">
-            <button class="btn-scrub-play" id="btn-play-pause" onclick="togglePlayPause()" title="Play / Pause Replay">
-              <svg id="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
-              <svg id="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-                <rect x="6" y="4" width="4" height="16"/>
-                <rect x="14" y="4" width="4" height="16"/>
-              </svg>
-            </button>
+      <div id="map-tooltip"></div>
+    </div>
 
-            <button class="btn-scrub-step" onclick="stepCycle(-1)" title="Previous Cycle">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="19 20 9 12 19 4 19 20"/>
-                <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </button>
-            
-            <button class="btn-scrub-step" onclick="stepCycle(1)" title="Next Cycle">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 4 15 12 5 20 5 4"/>
-                <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </button>
+    <!-- Side column: ruled sections -->
+    <div class="side-pane">
+      
+      <!-- Section 1: Leak to inject -->
+      <div class="ruled-section">
+        <h2 class="section-title">Leak to inject</h2>
 
-            <input type="range" min="0" max="7" value="0" step="1" class="timeline-range" id="cycle-slider" oninput="onSliderChange(this.value)">
-          </div>
-
-          <div class="timeline-phases-bar">
-            <div class="phase-pill green">Normal Days (0-2)</div>
-            <div class="phase-pill yellow">Leak Start (3)</div>
-            <div class="phase-pill red">Detection (Days 4-7)</div>
+        <div class="control-row">
+          <span class="control-label">Leak size</span>
+          <div class="button-group" role="radiogroup" aria-label="Leak size">
+            <button class="btn-choice" data-size="small" onclick="setSize('small')">small</button>
+            <button class="btn-choice active" data-size="medium" onclick="setSize('medium')">medium</button>
+            <button class="btn-choice" data-size="large" onclick="setSize('large')">large</button>
           </div>
         </div>
 
-        <!-- Real-Time Verdict Card -->
-        <div class="verdict-box state-normal" id="verdict-card">
-          <div class="verdict-main">
-            <div class="verdict-status-icon" id="verdict-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-            </div>
-            <div>
-              <div class="verdict-headline" id="verdict-title">SYSTEM STATUS: NORMAL</div>
-              <div class="verdict-caption" id="verdict-subtitle">Pipes pressurized &bull; Consumer demand swings filtered</div>
-            </div>
-          </div>
-
-          <div class="verdict-score-badge">
-            <div class="verdict-score-num" id="verdict-metric-val">d = 0.38</div>
-            <div style="font-size: 10px; color: var(--text-muted);">Threshold: 1.10</div>
+        <div class="control-row">
+          <span class="control-label">Sensors</span>
+          <div class="button-group" role="radiogroup" aria-label="Sensor count">
+            <button class="btn-choice" data-sensors="5" onclick="setSensors('5')">5</button>
+            <button class="btn-choice" data-sensors="10" onclick="setSensors('10')">10</button>
+            <button class="btn-choice active" data-sensors="20" onclick="setSensors('20')">20</button>
           </div>
         </div>
+      </div>
 
-        <!-- Pressure Waveform Chart -->
-        <div class="chart-box">
-          <div class="chart-box-header">
-            <span class="chart-box-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-accent)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              Sensor Pressures (m Head)
-            </span>
-            <span style="font-size: 10.5px; font-family: var(--font-mono); color: var(--text-muted);">
-              <span style="color: var(--cyan-accent);">&bull; Near Sensor</span> | 
-              <span style="color: #60a5fa;">&bull; Distant Sensor</span>
-            </span>
-          </div>
-          <div class="canvas-wrap">
-            <canvas id="chart-pressure" class="rail-chart"></canvas>
-          </div>
-        </div>
+      <!-- Section 2: Status -->
+      <div class="ruled-section">
+        <h2 class="section-title">Status</h2>
+        <div class="status-text" id="status-display">No leak detected</div>
+      </div>
 
-        <!-- Detection Statistic vs Threshold Chart -->
-        <div class="chart-box">
-          <div class="chart-box-header">
-            <span class="chart-box-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
-              Leak Signal (d) vs Threshold (1.10)
-            </span>
+      <!-- Section 3: Most likely leaking -->
+      <div class="ruled-section">
+        <h2 class="section-title">Most likely leaking</h2>
 
-            <div class="toggle-switch-pills">
-              <button id="btn-chart-cancelled" class="active" onclick="setChartMetricMode('cancelled')">Boond Filter</button>
-              <button id="btn-chart-plain" onclick="setChartMetricMode('plain')">Fixed Threshold</button>
-            </div>
-          </div>
-          <div class="canvas-wrap">
-            <canvas id="chart-detection" class="rail-chart"></canvas>
-          </div>
-        </div>
+        <ul class="candidate-list" id="candidate-list">
+          <li style="color: var(--cast-iron); padding: 8px 0;">Click a pipe on the map to start a leak.</li>
+        </ul>
 
-        <!-- Suspect Localisation Table -->
-        <div class="suspects-card" id="suspects-card">
-          <div class="rail-card-header">
-            <span class="rail-card-title">Suspected Junction Candidates</span>
-            <span style="font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted);">Cosine Signature Rank</span>
-          </div>
+        <button class="btn-action" id="btn-reveal" onclick="revealActualLeak()">Reveal true location</button>
 
-          <table class="suspect-table">
-            <thead>
-              <tr>
-                <th style="width: 40px;">Rank</th>
-                <th style="width: 80px;">Junction</th>
-                <th>Likelihood</th>
-                <th style="width: 65px; text-align: right;">Action</th>
-              </tr>
-            </thead>
-            <tbody id="candidates-tbody">
-              <tr>
-                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 12px;">
-                  Monitoring normal flow. Advance cycles to locate candidates.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
+        <div class="verdict-line" id="verdict-display" style="display: none;"></div>
+        <div class="next-sensor-note" id="next-sensor-display" style="display: none;"></div>
       </div>
 
     </div>
 
   </div>
 
-  <!-- ============================================================
-       PRESENTATION SLIDES MODAL (Under 3:00 Demo Video Companion)
-       ============================================================ -->
-  <div class="modal-backdrop" id="presentation-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="modal-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-accent)" stroke-width="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
-          BOOND Presentation Deck &bull; 3-Minute Video Storyboard
-        </div>
-        <button class="modal-close-btn" onclick="closePresentationModal()">&times;</button>
+  <!-- Bottom: Supply Cycle Ribbon (Strip Chart) -->
+  <div class="ribbon-pane">
+    <div class="ribbon-toolbar">
+      <span>Supply cycle ribbon &mdash; 8 daily cycles (supply windows: 06&ndash;09 h, 18&ndash;21 h)</span>
+      
+      <div class="ribbon-controls">
+        <button class="btn-tape" id="btn-play" onclick="togglePlay()">Play</button>
+        <button class="btn-tape" onclick="stepPlayback(-1)">Step &larr;</button>
+        <button class="btn-tape" onclick="stepPlayback(1)">Step &rarr;</button>
+        <span style="margin-left: 8px;">Cycle: <span class="num" id="ribbon-cycle-lbl">0</span> / 7</span>
       </div>
+    </div>
 
-      <div class="modal-body">
-        <div class="slide-tabs">
-          <button class="slide-tab active" onclick="switchSlideTab(0)">0:00 - The Problem</button>
-          <button class="slide-tab" onclick="switchSlideTab(1)">0:25 - Figure 1: Masking</button>
-          <button class="slide-tab" onclick="switchSlideTab(2)">0:55 - Demand Cancellation</button>
-          <button class="slide-tab" onclick="switchSlideTab(3)">1:15 - Live Demo Script</button>
-          <button class="slide-tab" onclick="switchSlideTab(4)">2:10 - AWS Architecture</button>
-          <button class="slide-tab" onclick="switchSlideTab(5)">2:35 - Honest Limits</button>
-        </div>
-
-        <div class="slide-pane active" id="slide-pane-0">
-          <h2 style="font-size: 22px; font-weight: 800; color: #fff;">Indian Cities Lose 30-50% Treated Water to Hidden Leaks</h2>
-          <p style="font-size: 14px; line-height: 1.6;">
-            Most Indian urban centres (Delhi, Bengaluru, Shimla) receive water for only <strong>2 to 4 hours per day</strong> (Intermittent Water Supply — IWS). Standard leak detection assumes continuous 24/7 pressurized flow. When pipes drain and refill every day, continuous models break down completely.
-          </p>
-        </div>
-
-        <div class="slide-pane" id="slide-pane-1">
-          <h2 style="font-size: 22px; font-weight: 800; color: #fff;">Figure 1: Demand Swings Mask Leak Signals</h2>
-          <p style="font-size: 14px; line-height: 1.6;">
-            Consumer drawing varies by <strong>&plusmn;10%</strong> day to day. In an intermittent network, this &plusmn;10% swing moves junction pressure head by 0.8 to 1.5 metres—the same magnitude as a pipe rupture! Therefore, a plain fixed threshold catches only <strong>49% of leaks</strong>.
-          </p>
-        </div>
-
-        <div class="slide-pane" id="slide-pane-2">
-          <h2 style="font-size: 22px; font-weight: 800; color: #fff;">Mathematical Innovation: Demand-Cancelled Residual</h2>
-          <div style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--cyan-accent);">
-            &circ;g = (s &bull; r) / (s &bull; s)<br>
-            r_c = r - s &times; &circ;g<br>
-            d = ||r_c||
-          </div>
-          <p style="font-size: 14px; line-height: 1.6;">
-            We project out the systemic demand swing, then require the signal to persist across supply cycles: raises detection from <strong>49% to 78%</strong> at 20 sensors.
-          </p>
-        </div>
-
-        <div class="slide-pane" id="slide-pane-3">
-          <h2 style="font-size: 22px; font-weight: 800; color: #fff;">Live Demo Recording Cues</h2>
-          <p style="font-size: 14px; line-height: 1.6;">
-            1. Select J-22 (Medium Leak) &bull; 2. Press Play to Cycle 4 &bull; 3. Highlight red alarm trigger &bull; 4. Reveal ground truth &bull; 5. Switch to 5 sensors to show honest degradation.
-          </p>
-        </div>
-
-        <div class="slide-pane" id="slide-pane-4">
-          <h2 style="font-size: 22px; font-weight: 800; color: #fff;">Serverless Cloud Architecture on AWS</h2>
-          <p style="font-size: 14px; line-height: 1.6;">
-            AWS Amplify static hosting &bull; Amazon API Gateway HTTP API &bull; AWS Lambda Python 3.12 for residual evaluation &bull; Amazon S3 for WNTR datasets.
-          </p>
-        </div>
-
-        <div class="slide-pane" id="slide-pane-5">
-          <h2 style="font-size: 22px; font-weight: 800; color: #fff;">Honest Limits & Wrap-up</h2>
-          <p style="font-size: 14px; line-height: 1.6;">
-            Simulated on EPANET WNTR models &bull; Small leaks (&lt;2.5%) difficult under sparse sensors &bull; Localises to neighbourhood sector (3-5 pipe blocks). Fully open source.
-          </p>
-        </div>
-      </div>
+    <div class="ribbon-svg-wrap">
+      <svg id="ribbon-svg"></svg>
     </div>
   </div>
 
-  <!-- ============================================================
-       APPLICATION LOGIC
-       ============================================================ -->
-  <script>
-    const API_BASE = window.API_BASE || '';
-    
-    let networkData = null;
-    let scenariosData = null;
-    let currentScenario = null;
-    let currentSensorCount = '20';
-    let currentLeakSize = 'medium';
-    let currentCycle = 0;
-    let isPlaying = false;
-    let playIntervalId = null;
-    let playSpeedMs = 800;
-    let isLeakRevealed = false;
-    let chartMetricMode = 'cancelled';
-    
-    let mapZoom = 1.0;
-    let mapPanX = 0;
-    let mapPanY = 0;
-    let isPanning = false;
-    let panStartX = 0;
-    let panStartY = 0;
+</div>
 
-    let pressureCanvas, pressureCtx;
-    let detectionCanvas, detectionCtx;
+<!-- Logic script -->
+<script>
+  /* -------------------------------------------------------------
+     Section 10: API_BASE and Data Contracts
+     ------------------------------------------------------------- */
+  const API_BASE = ""; // Real API base URL (empty = fallback to local files)
 
-    window.addEventListener('DOMContentLoaded', async () => {
-      initCanvasCharts();
-      setupSvgInteractions();
-      await loadNetworkAndScenarios();
+  let network = null;
+  let scenarios = null;
+  let currentScenario = null;
+  let currentSize = "medium";
+  let currentSensorCount = "20";
+  let currentCycle = 0;
+  let isPlaying = false;
+  let playTimer = null;
+  let isRevealed = false;
+
+  // Selected sensor for the heavy trace line in ribbon
+  let selectedSensorId = null;
+
+  // Reduced motion preference
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* -------------------------------------------------------------
+     Initialization
+     ------------------------------------------------------------- */
+  window.addEventListener("DOMContentLoaded", async () => {
+    await loadData();
+    window.addEventListener("resize", () => {
+      renderMap();
+      renderRibbon();
+    });
+  });
+
+  async function loadData() {
+    try {
+      if (API_BASE) {
+        const netRes = await fetch(`${API_BASE}/network`);
+        if (netRes.ok) network = await netRes.json();
+      }
+      if (!network) {
+        const res = await fetch("network.json");
+        if (res.ok) network = await res.json();
+      }
+    } catch (e) {
+      console.warn("Fetch network.json error, trying fallback object", e);
+    }
+    if (!network && window.BOOND_NETWORK) {
+      network = window.BOOND_NETWORK;
+    }
+
+    try {
+      const res = await fetch("scenarios.json");
+      if (res.ok) scenarios = await res.json();
+    } catch (e) {
+      console.warn("Fetch scenarios.json error, trying fallback object", e);
+    }
+    if (!scenarios && window.BOOND_SCENARIOS) {
+      scenarios = window.BOOND_SCENARIOS;
+    }
+
+    // Standalone fallback generator if both files missing
+    if (!network) generateInternalMockData();
+
+    // Default selection
+    selectedSensorId = network.sensor_sets[currentSensorCount][0];
+    renderMap();
+    renderRibbon();
+
+    // Load initial scenario (J-22 or first available)
+    const firstLeak = "J-22";
+    await loadScenario(firstLeak, currentSize);
+  }
+
+  /* -------------------------------------------------------------
+     Scenario loader
+     ------------------------------------------------------------- */
+  async function loadScenario(nodeId, size) {
+    pausePlayback();
+    isRevealed = false;
+    document.getElementById("verdict-display").style.display = "none";
+
+    let scen = null;
+    if (API_BASE) {
+      try {
+        const res = await fetch(`${API_BASE}/scenario?node=${nodeId}&size=${size}`);
+        if (res.ok) scen = await res.json();
+      } catch (e) {}
+    }
+
+    if (!scen && scenarios) {
+      const id = `${nodeId}_${size}`;
+      if (Array.isArray(scenarios)) {
+        scen = scenarios.find(s => s.id === id || (s.leak_node === nodeId && s.size_label === size));
+      } else if (scenarios[id]) {
+        scen = scenarios[id];
+      }
+    }
+
+    // If node has no scenario, find nearest leak node with a scenario
+    if (!scen && scenarios) {
+      scen = findNearestScenario(nodeId, size);
+    }
+
+    if (scen) {
+      currentScenario = scen;
+      currentCycle = prefersReducedMotion ? 7 : 0;
+      updateUI();
+    }
+  }
+
+  function findNearestScenario(targetNodeId, size) {
+    const targetNode = network.nodes.find(n => n.id === targetNodeId);
+    if (!targetNode || !scenarios) return null;
+    const scenList = Array.isArray(scenarios) ? scenarios : Object.values(scenarios);
+    let bestDist = Infinity;
+    let bestScen = null;
+
+    for (const sc of scenList) {
+      if (sc.size_label !== size) continue;
+      const n = network.nodes.find(x => x.id === sc.leak_node);
+      if (n) {
+        const d = Math.hypot(n.x - targetNode.x, n.y - targetNode.y);
+        if (d < bestDist) {
+          bestDist = d;
+          bestScen = sc;
+        }
+      }
+    }
+    return bestScen;
+  }
+
+  /* -------------------------------------------------------------
+     Map rendering (Section 7)
+     - Pipes: --cast-iron, 2px. Selected pipe: --ink, 4px.
+     - Junctions: small filled squares, 5px, in --cast-iron.
+     - Sensors: --brass ring-and-dot symbol.
+     - Heatmap: 5-step flat ramp.
+     - Actual leak: oxide ring when revealed.
+     ------------------------------------------------------------- */
+  function renderMap() {
+    if (!network) return;
+
+    const svg = document.getElementById("map-svg");
+    const rect = svg.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    if (w === 0 || h === 0) return;
+
+    // Coordinate normalization with padding
+    const xs = network.nodes.map(n => n.x);
+    const ys = network.nodes.map(n => n.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const pad = 40;
+
+    const scaleX = (w - pad * 2) / (maxX - minX || 1);
+    const scaleY = (h - pad * 2) / (maxY - minY || 1);
+    const scale = Math.min(scaleX, scaleY);
+    const offsetX = (w - (maxX - minX) * scale) / 2 - minX * scale;
+    const offsetY = (h - (maxY - minY) * scale) / 2 - minY * scale;
+
+    const pt = (x, y) => ({
+      x: x * scale + offsetX,
+      y: y * scale + offsetY
     });
 
-    async function loadNetworkAndScenarios() {
-      try {
-        if (API_BASE) {
-          try {
-            const netRes = await fetch(`${API_BASE}/network`);
-            networkData = await netRes.json();
-          } catch (e) { console.warn("API network fail", e); }
-        }
-        
-        if (!networkData) {
-          try {
-            const localNetRes = await fetch('network.json');
-            if (localNetRes.ok) networkData = await localNetRes.json();
-          } catch (e) { console.warn("Local fetch network.json fail", e); }
-        }
+    const nodePos = {};
+    network.nodes.forEach(n => {
+      nodePos[n.id] = pt(n.x, n.y);
+    });
 
-        if (!networkData && window.BOOND_NETWORK) networkData = window.BOOND_NETWORK;
+    // 1. Draw Pipes (--cast-iron, 2px)
+    const gPipes = document.getElementById("map-pipes");
+    gPipes.innerHTML = "";
+    network.pipes.forEach(p => {
+      const p1 = nodePos[p.from];
+      const p2 = nodePos[p.to];
+      if (!p1 || !p2) return;
 
-        if (!scenariosData) {
-          try {
-            const localScenRes = await fetch('scenarios.json');
-            if (localScenRes.ok) scenariosData = await localScenRes.json();
-          } catch (e) { console.warn("Local fetch scenarios.json fail", e); }
-        }
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", p1.x);
+      line.setAttribute("y1", p1.y);
+      line.setAttribute("x2", p2.x);
+      line.setAttribute("y2", p2.y);
+      line.setAttribute("stroke", "var(--cast-iron)");
+      line.setAttribute("stroke-width", "2");
+      line.setAttribute("stroke-linecap", "round");
+      line.style.cursor = "pointer";
 
-        if (!scenariosData && window.BOOND_SCENARIOS) scenariosData = window.BOOND_SCENARIOS;
-
-        if (!networkData) return;
-
-        renderNetworkMap(networkData);
-        selectScenario('J-22', currentLeakSize);
-      } catch (err) {
-        console.error("Init error:", err);
-      }
-    }
-
-    async function fetchScenario(nodeId, size) {
-      const scenKey = `${nodeId}_${size}`;
-      if (API_BASE) {
-        try {
-          const res = await fetch(`${API_BASE}/scenario?node=${nodeId}&size=${size}`);
-          if (res.ok) return await res.json();
-        } catch (e) { console.warn("API scenario failed", e); }
-      }
-
-      if (scenariosData) {
-        if (Array.isArray(scenariosData)) {
-          const found = scenariosData.find(s => s.id === scenKey || (s.leak_node === nodeId && s.size_label === size));
-          if (found) return found;
-        } else if (scenariosData[scenKey]) {
-          return scenariosData[scenKey];
-        } else {
-          return findNearestScenarioNode(nodeId, size);
-        }
-      }
-      return null;
-    }
-
-    function findNearestScenarioNode(targetNodeId, size) {
-      if (!networkData || !scenariosData) return null;
-      const targetNode = networkData.nodes.find(n => n.id === targetNodeId);
-      if (!targetNode) return null;
-
-      let bestDist = Infinity;
-      let bestScenario = null;
-      const allScenarios = Array.isArray(scenariosData) ? scenariosData : Object.values(scenariosData);
-      
-      for (const scen of allScenarios) {
-        if (scen.size_label !== size) continue;
-        const leakNode = networkData.nodes.find(n => n.id === scen.leak_node);
-        if (leakNode) {
-          const d = Math.hypot(leakNode.x - targetNode.x, leakNode.y - targetNode.y);
-          if (d < bestDist) {
-            bestDist = d;
-            bestScenario = scen;
-          }
-        }
-      }
-      return bestScenario;
-    }
-
-    async function selectScenario(nodeId, size) {
-      pausePlayback();
-      const scen = await fetchScenario(nodeId, size);
-      if (!scen) return;
-
-      currentScenario = scen;
-      currentCycle = 0;
-      isLeakRevealed = false;
-      document.getElementById('btn-reveal').classList.remove('revealed');
-      document.getElementById('reveal-text').textContent = 'Reveal True Leak';
-
-      const sel = document.getElementById('scenario-preset-select');
-      if (sel) {
-        for (let opt of sel.options) {
-          if (opt.value === scen.leak_node) {
-            sel.value = scen.leak_node;
-            break;
-          }
-        }
-      }
-
-      updateUIForCycle();
-    }
-
-    function renderNetworkMap(data) {
-      const pipesLayer = document.getElementById('layer-pipes');
-      const nodesLayer = document.getElementById('layer-nodes');
-      pipesLayer.innerHTML = '';
-      nodesLayer.innerHTML = '';
-
-      const nodeMap = new Map();
-      data.nodes.forEach(n => nodeMap.set(n.id, n));
-
-      // Draw Pipes
-      data.pipes.forEach(p => {
-        const nFrom = nodeMap.get(p.from);
-        const nTo = nodeMap.get(p.to);
-        if (!nFrom || !nTo) return;
-
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', nFrom.x);
-        line.setAttribute('y1', nFrom.y);
-        line.setAttribute('x2', nTo.x);
-        line.setAttribute('y2', nTo.y);
-        line.setAttribute('stroke', '#1e385c');
-        line.setAttribute('stroke-width', p.diameter_mm ? (p.diameter_mm / 55).toFixed(1) : '3.6');
-        line.setAttribute('stroke-linecap', 'round');
-        line.style.cursor = 'pointer';
-        line.style.transition = 'stroke 0.2s ease';
-
-        line.addEventListener('click', () => selectScenario(p.from, currentLeakSize));
-        line.addEventListener('mouseenter', (e) => {
-          line.setAttribute('stroke', '#38bdf8');
-          showTooltip(e, `<strong>Pipe ${p.id}</strong><br>${p.from} &rarr; ${p.to}<br>Diameter: ${p.diameter_mm || 200} mm`);
-        });
-        line.addEventListener('mouseleave', () => {
-          line.setAttribute('stroke', '#1e385c');
-          hideTooltip();
-        });
-
-        pipesLayer.appendChild(line);
+      line.addEventListener("click", () => {
+        loadScenario(p.from, currentSize);
       });
-
-      // Draw Nodes
-      data.nodes.forEach(n => {
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', n.x);
-        circle.setAttribute('cy', n.y);
-        circle.setAttribute('r', '5');
-        circle.setAttribute('fill', '#334e7a');
-        circle.setAttribute('stroke', '#06090e');
-        circle.setAttribute('stroke-width', '1.5');
-        circle.setAttribute('id', `node-${n.id}`);
-        circle.style.cursor = 'pointer';
-        circle.style.transition = 'all 0.2s ease';
-
-        circle.addEventListener('click', () => selectScenario(n.id, currentLeakSize));
-        circle.addEventListener('mouseenter', (e) => {
-          circle.setAttribute('r', '7.5');
-          circle.setAttribute('fill', '#60a5fa');
-          const isSensor = isNodeSensor(n.id);
-          let text = `<strong>Junction ${n.id}</strong><br>Elevation: ${n.elevation || 35.0} m`;
-          if (isSensor) text += `<br><span style="color:var(--cyan-accent); font-weight:700;">&bull; Pressure Sensor Active</span>`;
-          showTooltip(e, text);
-        });
-        circle.addEventListener('mouseleave', () => {
-          circle.setAttribute('r', '5');
-          circle.setAttribute('fill', '#334e7a');
-          hideTooltip();
-        });
-
-        nodesLayer.appendChild(circle);
+      line.addEventListener("mouseenter", (e) => {
+        showTooltip(e, `Pipe ${p.id}: ${p.from} &ndash; ${p.to}`);
       });
+      line.addEventListener("mouseleave", hideTooltip);
 
-      updateSensorsLayer();
+      gPipes.appendChild(line);
+    });
+
+    // 2. Draw Heatmap (Candidate junctions, 5 flat steps)
+    const gHeat = document.getElementById("map-heatmap");
+    gHeat.innerHTML = "";
+
+    const res = currentScenario ? currentScenario.results[currentSensorCount] : null;
+    const isDetected = res && res.detected_cycle !== null && currentCycle >= res.detected_cycle;
+
+    if (res && res.top_k && isDetected) {
+      res.top_k.forEach(cand => {
+        const p = nodePos[cand.node];
+        if (!p) return;
+        const color = getHeatmapColor(cand.score);
+        const size = 10 + cand.score * 12;
+
+        const sq = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        sq.setAttribute("x", p.x - size / 2);
+        sq.setAttribute("y", p.y - size / 2);
+        sq.setAttribute("width", size);
+        sq.setAttribute("height", size);
+        sq.setAttribute("fill", color);
+        sq.setAttribute("stroke", "var(--ink)");
+        sq.setAttribute("stroke-width", "1");
+        sq.style.cursor = "pointer";
+
+        sq.addEventListener("click", () => loadScenario(cand.node, currentSize));
+        sq.addEventListener("mouseenter", (e) => {
+          showTooltip(e, `Junction ${cand.node} &bull; likelihood: ${(cand.score).toFixed(2)}`);
+        });
+        sq.addEventListener("mouseleave", hideTooltip);
+
+        gHeat.appendChild(sq);
+      });
     }
 
-    function isNodeSensor(nodeId) {
-      if (!networkData) return false;
-      return (networkData.sensor_sets[currentSensorCount] || []).includes(nodeId);
+    // 3. Draw Junctions (small filled squares, 5px, in --cast-iron)
+    const gJunc = document.getElementById("map-junctions");
+    gJunc.innerHTML = "";
+    network.nodes.forEach(n => {
+      const p = nodePos[n.id];
+      const sq = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      sq.setAttribute("x", p.x - 2.5);
+      sq.setAttribute("y", p.y - 2.5);
+      sq.setAttribute("width", "5");
+      sq.setAttribute("height", "5");
+      sq.setAttribute("fill", "var(--cast-iron)");
+      sq.style.cursor = "pointer";
+      sq.setAttribute("tabindex", "0");
+
+      sq.addEventListener("click", () => loadScenario(n.id, currentSize));
+      sq.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          loadScenario(n.id, currentSize);
+        }
+      });
+      sq.addEventListener("mouseenter", (e) => {
+        showTooltip(e, `Junction ${n.id}`);
+      });
+      sq.addEventListener("mouseleave", hideTooltip);
+
+      gJunc.appendChild(sq);
+    });
+
+    // 4. Draw Sensors (--brass ring-and-dot symbol)
+    const gSens = document.getElementById("map-sensors");
+    gSens.innerHTML = "";
+    const activeSensors = network.sensor_sets[currentSensorCount] || [];
+
+    activeSensors.forEach(sId => {
+      const p = nodePos[sId];
+      if (!p) return;
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.style.cursor = "pointer";
+
+      // Outer ring
+      const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      ring.setAttribute("cx", p.x);
+      ring.setAttribute("cy", p.y);
+      ring.setAttribute("r", "6");
+      ring.setAttribute("fill", "none");
+      ring.setAttribute("stroke", "var(--brass)");
+      ring.setAttribute("stroke-width", "1.5");
+
+      // Inner dot
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", p.x);
+      dot.setAttribute("cy", p.y);
+      dot.setAttribute("r", "2");
+      dot.setAttribute("fill", "var(--brass)");
+
+      g.appendChild(ring);
+      g.appendChild(dot);
+
+      g.addEventListener("click", () => {
+        selectedSensorId = sId;
+        renderRibbon();
+      });
+      g.addEventListener("mouseenter", (e) => {
+        let pTxt = "";
+        if (currentScenario && currentScenario.cycles[currentCycle]) {
+          const val = currentScenario.cycles[currentCycle].pressures[sId];
+          if (val) pTxt = ` &bull; ${val.toFixed(1)} m`;
+        }
+        showTooltip(e, `Sensor ${sId}${pTxt}`);
+      });
+      g.addEventListener("mouseleave", hideTooltip);
+
+      gSens.appendChild(g);
+    });
+
+    // 5. Annotations: Actual leak (oxide ring) and next sensor (dashed brass)
+    const gAnn = document.getElementById("map-annotations");
+    gAnn.innerHTML = "";
+
+    // Suggested next sensor (if present in results)
+    if (res && res.next_sensor) {
+      const np = nodePos[res.next_sensor];
+      if (np) {
+        const nextRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        nextRing.setAttribute("cx", np.x);
+        nextRing.setAttribute("cy", np.y);
+        nextRing.setAttribute("r", "12");
+        nextRing.setAttribute("fill", "none");
+        nextRing.setAttribute("stroke", "var(--brass)");
+        nextRing.setAttribute("stroke-width", "1.5");
+        nextRing.setAttribute("stroke-dasharray", "3,3");
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", np.x + 14);
+        text.setAttribute("y", np.y + 4);
+        text.setAttribute("fill", "var(--brass)");
+        text.setAttribute("font-size", "11px");
+        text.setAttribute("font-weight", "500");
+        text.textContent = "Suggested next sensor";
+
+        gAnn.appendChild(nextRing);
+        gAnn.appendChild(text);
+      }
     }
 
-    function updateSensorsLayer() {
-      const sensorsLayer = document.getElementById('layer-sensors');
-      sensorsLayer.innerHTML = '';
-      if (!networkData) return;
+    // Actual leak ring (only when revealed)
+    if (isRevealed && currentScenario) {
+      const lp = nodePos[currentScenario.leak_node];
+      if (lp) {
+        const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        ring.setAttribute("cx", lp.x);
+        ring.setAttribute("cy", lp.y);
+        ring.setAttribute("r", "14");
+        ring.setAttribute("fill", "none");
+        ring.setAttribute("stroke", "var(--oxide)");
+        ring.setAttribute("stroke-width", "2");
 
-      const activeSensors = networkData.sensor_sets[currentSensorCount] || [];
-      document.getElementById('kpi-sensors').textContent = `${activeSensors.length} / 20`;
-      document.getElementById('kpi-sensor-density').textContent = currentSensorCount === '20' ? 'High Density (100% coverage)' : (currentSensorCount === '10' ? 'Medium Density' : 'Sparse (Cost Saving)');
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", lp.x + 16);
+        label.setAttribute("y", lp.y + 4);
+        label.setAttribute("fill", "var(--oxide)");
+        label.setAttribute("font-size", "12px");
+        label.setAttribute("font-weight", "600");
+        label.textContent = "Actual leak";
 
+        gAnn.appendChild(ring);
+        gAnn.appendChild(label);
+      }
+    }
+  }
+
+  function getHeatmapColor(score) {
+    if (score < 0.2) return "var(--heat-1)";
+    if (score < 0.4) return "var(--heat-2)";
+    if (score < 0.6) return "var(--heat-3)";
+    if (score < 0.8) return "var(--heat-4)";
+    return "var(--heat-5)";
+  }
+
+  /* -------------------------------------------------------------
+     Supply Cycle Ribbon (Section 6)
+     Control-room strip chart hand-drawn in SVG:
+     - 8 cycle columns
+     - Shaded plaster-darker supply windows (06-09, 18-21), hours labelled at left
+     - Flat ink pressure traces, selected sensor heavy line
+     - Dashed +/-10% demand band behind traces
+     - Lower strip: detection statistic vs threshold
+     - Oxide vertical marker when detected
+     ------------------------------------------------------------- */
+  function renderRibbon() {
+    const svg = document.getElementById("ribbon-svg");
+    const rect = svg.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    if (w === 0 || h === 0) return;
+
+    svg.innerHTML = "";
+
+    const padL = 74; // Space for hours labels at left
+    const padR = 20;
+    const padT = 16;
+    const padB = 22;
+
+    const mainH = (h - padT - padB) * 0.65; // Upper pressure strip
+    const lowerT = padT + mainH + 14;
+    const lowerH = (h - padT - padB) * 0.35 - 14; // Lower detection strip
+    const chartW = w - padL - padR;
+    const cycleW = chartW / 8;
+
+    // Y labels at left
+    const labelHours = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    labelHours.setAttribute("x", "12");
+    labelHours.setAttribute("y", padT + mainH / 2);
+    labelHours.setAttribute("fill", "var(--cast-iron)");
+    labelHours.setAttribute("font-size", "12px");
+    labelHours.textContent = "Pressure";
+    svg.appendChild(labelHours);
+
+    const labelUnits = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    labelUnits.setAttribute("x", "12");
+    labelUnits.setAttribute("y", padT + mainH / 2 + 15);
+    labelUnits.setAttribute("fill", "var(--cast-iron)");
+    labelUnits.setAttribute("font-size", "11px");
+    labelUnits.textContent = "06\u201309, 18\u201321 h";
+    svg.appendChild(labelUnits);
+
+    const labelStat = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    labelStat.setAttribute("x", "12");
+    labelStat.setAttribute("y", lowerT + lowerH / 2 + 4);
+    labelStat.setAttribute("fill", "var(--cast-iron)");
+    labelStat.setAttribute("font-size", "12px");
+    labelStat.textContent = "Signal d";
+    svg.appendChild(labelStat);
+
+    // Baseline reference range for pressure: 20m to 35m
+    const minP = 22, maxP = 34;
+    const pToY = (p) => padT + mainH - ((p - minP) / (maxP - minP)) * mainH;
+
+    // Upper strip baseline and demand band
+    for (let c = 0; c < 8; c++) {
+      const cx = padL + c * cycleW;
+
+      // Cycle column dividing line
+      const divLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      divLine.setAttribute("x1", cx);
+      divLine.setAttribute("y1", padT);
+      divLine.setAttribute("x2", cx);
+      divLine.setAttribute("y2", h - padB);
+      divLine.setAttribute("stroke", "var(--rule)");
+      divLine.setAttribute("stroke-width", "1");
+      svg.appendChild(divLine);
+
+      // Cycle label at bottom
+      const cTxt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      cTxt.setAttribute("x", cx + cycleW / 2);
+      cTxt.setAttribute("y", h - 6);
+      cTxt.setAttribute("fill", c === currentCycle ? "var(--ink)" : "var(--cast-iron)");
+      cTxt.setAttribute("font-weight", c === currentCycle ? "600" : "400");
+      cTxt.setAttribute("font-size", "12px");
+      cTxt.setAttribute("text-anchor", "middle");
+      cTxt.textContent = `Cycle ${c}`;
+      svg.appendChild(cTxt);
+
+      // Two shaded supply windows (06-09 and 18-21):
+      // Window 1: 6h/24h to 9h/24h (25% to 37.5% of cycle width)
+      const w1X = cx + cycleW * (6 / 24);
+      const w1W = cycleW * (3 / 24);
+      const win1 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      win1.setAttribute("x", w1X);
+      win1.setAttribute("y", padT);
+      win1.setAttribute("width", w1W);
+      win1.setAttribute("height", mainH);
+      win1.setAttribute("fill", "var(--plaster-dark)");
+      svg.appendChild(win1);
+
+      // Window 2: 18h/24h to 21h/24h (75% to 87.5% of cycle width)
+      const w2X = cx + cycleW * (18 / 24);
+      const w2W = cycleW * (3 / 24);
+      const win2 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      win2.setAttribute("x", w2X);
+      win2.setAttribute("y", padT);
+      win2.setAttribute("width", w2W);
+      win2.setAttribute("height", mainH);
+      win2.setAttribute("fill", "var(--plaster-dark)");
+      svg.appendChild(win2);
+
+      // Dashed +/- 10% demand swing band
+      const yNorm = pToY(28.5);
+      const yUpper = pToY(28.5 + 1.2);
+      const yLower = pToY(28.5 - 1.2);
+
+      const dBand = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      dBand.setAttribute("x1", cx);
+      dBand.setAttribute("y1", yUpper);
+      dBand.setAttribute("x2", cx + cycleW);
+      dBand.setAttribute("y2", yUpper);
+      dBand.setAttribute("stroke", "var(--cast-iron)");
+      dBand.setAttribute("stroke-width", "1");
+      dBand.setAttribute("stroke-dasharray", "3,3");
+      svg.appendChild(dBand);
+
+      const dBand2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      dBand2.setAttribute("x1", cx);
+      dBand2.setAttribute("y1", yLower);
+      dBand2.setAttribute("x2", cx + cycleW);
+      dBand2.setAttribute("y2", yLower);
+      dBand2.setAttribute("stroke", "var(--cast-iron)");
+      dBand2.setAttribute("stroke-width", "1");
+      dBand2.setAttribute("stroke-dasharray", "3,3");
+      svg.appendChild(dBand2);
+
+      // Leak start tick on cycle axis (only when revealed)
+      if (isRevealed && c === 3) {
+        const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        tick.setAttribute("x1", cx);
+        tick.setAttribute("y1", padT);
+        tick.setAttribute("x2", cx);
+        tick.setAttribute("y2", padT + mainH);
+        tick.setAttribute("stroke", "var(--oxide)");
+        tick.setAttribute("stroke-width", "1.5");
+        tick.setAttribute("stroke-dasharray", "2,2");
+        svg.appendChild(tick);
+
+        const leakTxt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        leakTxt.setAttribute("x", cx + 4);
+        leakTxt.setAttribute("y", padT + 12);
+        leakTxt.setAttribute("fill", "var(--oxide)");
+        leakTxt.setAttribute("font-size", "11px");
+        leakTxt.setAttribute("font-weight", "500");
+        leakTxt.textContent = "Leak starts";
+        svg.appendChild(leakTxt);
+      }
+    }
+
+    // Right-most border of cycles
+    const lastLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    lastLine.setAttribute("x1", padL + chartW);
+    lastLine.setAttribute("y1", padT);
+    lastLine.setAttribute("x2", padL + chartW);
+    lastLine.setAttribute("y2", h - padB);
+    lastLine.setAttribute("stroke", "var(--rule)");
+    svg.appendChild(lastLine);
+
+    // Draw Pressure traces across cycles for active sensors
+    if (currentScenario && network) {
+      const activeSensors = network.sensor_sets[currentSensorCount] || [];
+
+      // Draw all reporting sensors as thin ink lines
       activeSensors.forEach(sId => {
-        const node = networkData.nodes.find(n => n.id === sId);
-        if (!node) return;
+        const isSelected = (sId === selectedSensorId);
+        let pathD = "";
 
-        const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        pulse.setAttribute('cx', node.x);
-        pulse.setAttribute('cy', node.y);
-        pulse.setAttribute('r', '11');
-        pulse.setAttribute('fill', 'none');
-        pulse.setAttribute('stroke', '#06b6d4');
-        pulse.setAttribute('stroke-width', '1.5');
-        pulse.setAttribute('stroke-opacity', '0.5');
-        pulse.setAttribute('filter', 'url(#sensor-glow)');
+        for (let c = 0; c <= Math.min(currentCycle, 7); c++) {
+          const pVal = currentScenario.cycles[c].pressures[sId] || 28.0;
+          const y = pToY(pVal);
+          const x = padL + c * cycleW + cycleW / 2;
 
-        const core = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        core.setAttribute('cx', node.x);
-        core.setAttribute('cy', node.y);
-        core.setAttribute('r', '6');
-        core.setAttribute('fill', '#06b6d4');
-        core.setAttribute('stroke', '#ffffff');
-        core.setAttribute('stroke-width', '2');
-        core.style.cursor = 'pointer';
+          if (c === 0) pathD += `M ${x} ${y}`;
+          else pathD += ` L ${x} ${y}`;
+        }
 
-        core.addEventListener('click', () => selectScenario(node.id, currentLeakSize));
-        core.addEventListener('mouseenter', (e) => {
-          let pVal = "28.5";
-          if (currentScenario && currentScenario.cycles && currentScenario.cycles[currentCycle]) {
-            pVal = currentScenario.cycles[currentCycle].pressures[sId] || "28.5";
-          }
-          showTooltip(e, `<strong>Sensor ${sId}</strong><br>Head: ${pVal} m<br>Ranked DMA Monitor`);
-        });
-        core.addEventListener('mouseleave', hideTooltip);
-
-        sensorsLayer.appendChild(pulse);
-        sensorsLayer.appendChild(core);
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", pathD);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "var(--ink)");
+        path.setAttribute("stroke-width", isSelected ? "2.5" : "1");
+        path.setAttribute("stroke-opacity", isSelected ? "1.0" : "0.35");
+        svg.appendChild(path);
       });
     }
 
-    function updateHeatmapOverlay() {
-      const heatmapLayer = document.getElementById('layer-heatmap');
-      const leakOverlay = document.getElementById('layer-leak-overlay');
-      heatmapLayer.innerHTML = '';
-      leakOverlay.innerHTML = '';
+    // Lower strip: Detection statistic strip
+    const res = currentScenario ? currentScenario.results[currentSensorCount] : null;
+    const thr = res ? res.threshold : 1.10;
+    const maxD = 2.4;
+    const dToY = (d) => lowerT + lowerH - (d / maxD) * lowerH;
 
-      if (!currentScenario || !networkData) return;
-      const res = currentScenario.results[currentSensorCount];
+    // Horizontal threshold line
+    const yThr = dToY(thr);
+    const thrLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    thrLine.setAttribute("x1", padL);
+    thrLine.setAttribute("y1", yThr);
+    thrLine.setAttribute("x2", padL + chartW);
+    thrLine.setAttribute("y2", yThr);
+    thrLine.setAttribute("stroke", "var(--cast-iron)");
+    thrLine.setAttribute("stroke-width", "1");
+    thrLine.setAttribute("stroke-dasharray", "4,3");
+    svg.appendChild(thrLine);
 
-      if (res && res.top_k && currentCycle >= 3) {
-        res.top_k.forEach((cand, idx) => {
-          const node = networkData.nodes.find(n => n.id === cand.node);
-          if (!node) return;
+    const thrTxt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    thrTxt.setAttribute("x", padL + chartW - 4);
+    thrTxt.setAttribute("y", yThr - 3);
+    thrTxt.setAttribute("fill", "var(--cast-iron)");
+    thrTxt.setAttribute("font-size", "10px");
+    thrTxt.setAttribute("text-anchor", "end");
+    thrTxt.textContent = `Threshold ${thr.toFixed(1)}`;
+    svg.appendChild(thrTxt);
 
-          const score = cand.score;
-          const radius = 14 + score * 18;
-          let color = score > 0.85 ? '#f97316' : (score > 0.65 ? '#f59e0b' : (score > 0.4 ? '#06b6d4' : '#6366f1'));
-          let opacity = (0.25 + score * 0.45).toFixed(2);
+    // Plot d_series
+    if (res && res.d_series) {
+      let dPathD = "";
+      for (let c = 0; c <= Math.min(currentCycle, 7); c++) {
+        const dVal = res.d_series[c];
+        const x = padL + c * cycleW + cycleW / 2;
+        const y = dToY(dVal);
 
-          const aura = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          aura.setAttribute('cx', node.x);
-          aura.setAttribute('cy', node.y);
-          aura.setAttribute('r', radius.toFixed(1));
-          aura.setAttribute('fill', color);
-          aura.setAttribute('fill-opacity', opacity);
-          aura.setAttribute('stroke', color);
-          aura.setAttribute('stroke-width', '2');
-          aura.setAttribute('stroke-dasharray', '3,3');
-          aura.style.cursor = 'pointer';
+        if (c === 0) dPathD += `M ${x} ${y}`;
+        else dPathD += ` L ${x} ${y}`;
 
-          aura.addEventListener('click', () => selectScenario(node.id, currentLeakSize));
-          aura.addEventListener('mouseenter', (e) => {
-            showTooltip(e, `<strong>Candidate #${idx+1}: ${node.id}</strong><br>Likelihood Score: ${(score * 100).toFixed(0)}%`);
-          });
-          aura.addEventListener('mouseleave', hideTooltip);
-
-          heatmapLayer.appendChild(aura);
-        });
+        // Dot
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("cx", x);
+        dot.setAttribute("cy", y);
+        dot.setAttribute("r", "2.5");
+        dot.setAttribute("fill", "var(--ink)");
+        svg.appendChild(dot);
       }
 
-      if (isLeakRevealed && currentScenario) {
-        const trueNode = networkData.nodes.find(n => n.id === currentScenario.leak_node);
-        if (trueNode) {
-          const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          halo.setAttribute('cx', trueNode.x);
-          halo.setAttribute('cy', trueNode.y);
-          halo.setAttribute('r', '24');
-          halo.setAttribute('fill', 'none');
-          halo.setAttribute('stroke', '#f43f5e');
-          halo.setAttribute('stroke-width', '3');
-          halo.setAttribute('filter', 'url(#leak-glow)');
+      const dPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      dPath.setAttribute("d", dPathD);
+      dPath.setAttribute("fill", "none");
+      dPath.setAttribute("stroke", "var(--ink)");
+      dPath.setAttribute("stroke-width", "1.5");
+      svg.appendChild(dPath);
 
-          const center = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          center.setAttribute('cx', trueNode.x);
-          center.setAttribute('cy', trueNode.y);
-          center.setAttribute('r', '8');
-          center.setAttribute('fill', '#f43f5e');
-          center.setAttribute('stroke', '#ffffff');
-          center.setAttribute('stroke-width', '2');
+      // Detection vertical oxide marker
+      if (res.detected_cycle !== null && currentCycle >= res.detected_cycle) {
+        const detCycle = res.detected_cycle;
+        const detX = padL + detCycle * cycleW + cycleW / 2;
+        const delay = detCycle - currentScenario.start_cycle;
 
-          center.addEventListener('mouseenter', (e) => {
-            showTooltip(e, `<strong>GROUND TRUTH LEAK: ${trueNode.id}</strong><br>${currentScenario.size_label} (${currentScenario.size_pct_of_supply}% of supply)`);
-          });
-          center.addEventListener('mouseleave', hideTooltip);
+        const oxideMarker = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        oxideMarker.setAttribute("x1", detX);
+        oxideMarker.setAttribute("y1", padT);
+        oxideMarker.setAttribute("x2", detX);
+        oxideMarker.setAttribute("y2", lowerT + lowerH);
+        oxideMarker.setAttribute("stroke", "var(--oxide)");
+        oxideMarker.setAttribute("stroke-width", "2");
+        svg.appendChild(oxideMarker);
 
-          leakOverlay.appendChild(halo);
-          leakOverlay.appendChild(center);
-        }
+        const oxideTxt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        oxideTxt.setAttribute("x", detX + 5);
+        oxideTxt.setAttribute("y", lowerT + 12);
+        oxideTxt.setAttribute("fill", "var(--oxide)");
+        oxideTxt.setAttribute("font-size", "12px");
+        oxideTxt.setAttribute("font-weight", "600");
+        oxideTxt.textContent = `Leak detected (${delay} cycle${delay === 1 ? "" : "s"} after start)`;
+        svg.appendChild(oxideTxt);
       }
     }
+  }
 
-    function toggleRevealLeak() {
-      isLeakRevealed = !isLeakRevealed;
-      const btn = document.getElementById('btn-reveal');
-      const txt = document.getElementById('reveal-text');
-      if (isLeakRevealed) {
-        btn.classList.add('revealed');
-        txt.textContent = 'Hide Ground Truth';
-      } else {
-        btn.classList.remove('revealed');
-        txt.textContent = 'Reveal True Leak';
-      }
-      updateHeatmapOverlay();
+  /* -------------------------------------------------------------
+     UI updates (Status, Candidates, Verdict, Next Sensor)
+     ------------------------------------------------------------- */
+  function updateUI() {
+    document.getElementById("ribbon-cycle-lbl").textContent = currentCycle;
+
+    if (!currentScenario) return;
+
+    const res = currentScenario.results[currentSensorCount];
+    const isDetected = res && res.detected_cycle !== null && currentCycle >= res.detected_cycle;
+    const isLeaking = currentCycle >= currentScenario.start_cycle;
+
+    const statusEl = document.getElementById("status-display");
+
+    if (isDetected) {
+      const delay = res.detected_cycle - currentScenario.start_cycle;
+      statusEl.className = "status-text oxide";
+      statusEl.textContent = `Leak detected ${delay} cycle${delay === 1 ? "" : "s"} after it started`;
+    } else if (isLeaking && res && res.detected_cycle === null) {
+      statusEl.className = "status-text";
+      statusEl.textContent = "Not detected in 8 cycles. Try a larger leak or more sensors.";
+    } else {
+      statusEl.className = "status-text";
+      statusEl.textContent = "No leak detected";
     }
 
-    function updateUIForCycle() {
-      if (!currentScenario) return;
+    // Candidate list (Most likely leaking)
+    const listEl = document.getElementById("candidate-list");
+    listEl.innerHTML = "";
 
-      document.getElementById('cycle-slider').value = currentCycle;
-      document.getElementById('lbl-cycle-num').textContent = `Cycle ${currentCycle} (Day ${currentCycle})`;
-
-      const cycleData = currentScenario.cycles[currentCycle] || {};
-      const demandFactor = cycleData.demand_factor || 1.0;
-      const demandDeltaPct = ((demandFactor - 1.0) * 100).toFixed(1);
-      const sign = demandDeltaPct >= 0 ? '+' : '';
-
-      const res = currentScenario.results[currentSensorCount];
-      const threshold = res ? res.threshold : 1.10;
-      const dVal = (res && res.d_series && res.d_series[currentCycle] !== undefined) ? res.d_series[currentCycle] : 0.4;
-      const isDetected = res && (res.detected_cycle !== null) && (currentCycle >= res.detected_cycle);
-      const isLeaking = currentCycle >= currentScenario.start_cycle;
-
-      const vCard = document.getElementById('verdict-card');
-      const vTitle = document.getElementById('verdict-title');
-      const vSub = document.getElementById('verdict-subtitle');
-      const vMetric = document.getElementById('verdict-metric-val');
-
-      vMetric.textContent = `d = ${dVal.toFixed(2)}`;
-
-      const kpiHealth = document.getElementById('kpi-health');
-      const kpiSignalDesc = document.getElementById('kpi-signal-desc');
-
-      if (isDetected) {
-        vCard.className = 'verdict-box state-detected';
-        vTitle.textContent = `LEAK DETECTED (CONFIRMED)`;
-        vSub.textContent = `Confirmed at Cycle ${res.detected_cycle} \u2022 Demand noise cancelled cleanly`;
-        kpiHealth.textContent = 'Alert Triggered';
-        kpiHealth.style.color = 'var(--rose)';
-        kpiSignalDesc.textContent = `d = ${dVal.toFixed(2)} > 1.10 Thr`;
-      } else if (isLeaking && res && res.detected_cycle === null) {
-        vCard.className = 'verdict-box state-undetected';
-        vTitle.textContent = `LEAK UNDETECTED (${currentSensorCount} SENSORS)`;
-        vSub.textContent = `Small leak obscured under sparse placement`;
-        kpiHealth.textContent = 'Undetected';
-        kpiHealth.style.color = 'var(--amber)';
-        kpiSignalDesc.textContent = `Sparse sensor limit`;
-      } else if (isLeaking) {
-        vCard.className = 'verdict-box state-evaluating';
-        vTitle.textContent = `LEAK COMMENCED (CYCLE 3)`;
-        vSub.textContent = `Evaluating 2-cycle persistence check`;
-        kpiHealth.textContent = 'Evaluating';
-        kpiHealth.style.color = 'var(--amber)';
-        kpiSignalDesc.textContent = `Signal rising`;
-      } else {
-        vCard.className = 'verdict-box state-normal';
-        vTitle.textContent = `SYSTEM STATUS: NORMAL`;
-        vSub.textContent = `Pipes pressurized \u2022 Demand swing (${sign}${demandDeltaPct}%) cancelled`;
-        kpiHealth.textContent = 'Normal';
-        kpiHealth.style.color = 'var(--emerald)';
-        kpiSignalDesc.textContent = `Demand noise filtered`;
-      }
-
-      // Update KPI Top Suspect
-      if (res && res.top_k && res.top_k.length > 0) {
-        document.getElementById('kpi-top-node').textContent = res.top_k[0].node;
-        document.getElementById('kpi-top-score').textContent = `${Math.round(res.top_k[0].score * 100)}%`;
-      }
-
-      updateCandidatesTable(res);
-      drawPressureChart();
-      drawDetectionChart();
-      updateHeatmapOverlay();
-    }
-
-    function updateCandidatesTable(res) {
-      const tbody = document.getElementById('candidates-tbody');
-      if (!res || !res.top_k || currentCycle < 3) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 14px;">
-              ${currentCycle < 3 ? 'Monitoring baseline. Leak starts at Cycle 3.' : 'Evaluating candidates...'}
-            </td>
-          </tr>
+    if (res && res.top_k && isDetected) {
+      res.top_k.slice(0, 5).forEach((cand, idx) => {
+        const li = document.createElement("li");
+        li.className = "candidate-row";
+        li.innerHTML = `
+          <span class="candidate-rank">${idx + 1}</span>
+          <span class="candidate-node">${cand.node}</span>
+          <span class="candidate-score num">${cand.score.toFixed(2)}</span>
         `;
-        return;
-      }
-
-      tbody.innerHTML = '';
-      res.top_k.slice(0, 4).forEach((cand, idx) => {
-        const tr = document.createElement('tr');
-        const scorePct = Math.round(cand.score * 100);
-        
-        tr.innerHTML = `
-          <td style="font-family: var(--font-mono); font-weight: 700; color: ${idx === 0 ? 'var(--amber)' : 'var(--text-muted)'};">#${idx+1}</td>
-          <td><span class="node-tag">${cand.node}</span></td>
-          <td>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <div class="bar-track">
-                <div class="bar-fill" style="width: ${scorePct}%;"></div>
-              </div>
-              <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; width: 32px;">${scorePct}%</span>
-            </div>
-          </td>
-          <td style="text-align: right;">
-            <button class="btn-locate" onclick="focusNode('${cand.node}')">Locate</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+        listEl.appendChild(li);
       });
+    } else {
+      listEl.innerHTML = `<li style="color: var(--cast-iron); padding: 8px 0;">${isLeaking ? "Evaluating signal..." : "Click a pipe on the map to start a leak."}</li>`;
     }
 
-    /* -------------------------------------------------------------
-       Canvas Charts
-       ------------------------------------------------------------- */
-    function initCanvasCharts() {
-      pressureCanvas = document.getElementById('chart-pressure');
-      pressureCtx = pressureCanvas.getContext('2d');
-
-      detectionCanvas = document.getElementById('chart-detection');
-      detectionCtx = detectionCanvas.getContext('2d');
-
-      resizeCanvas(pressureCanvas);
-      resizeCanvas(detectionCanvas);
-
-      window.addEventListener('resize', () => {
-        resizeCanvas(pressureCanvas);
-        resizeCanvas(detectionCanvas);
-        drawPressureChart();
-        drawDetectionChart();
-      });
+    // Next sensor note
+    const nextEl = document.getElementById("next-sensor-display");
+    if (res && res.next_sensor) {
+      nextEl.style.display = "block";
+      nextEl.textContent = `Suggested next sensor: ${res.next_sensor}`;
+    } else {
+      nextEl.style.display = "none";
     }
 
-    function resizeCanvas(canvas) {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-    }
+    renderMap();
+    renderRibbon();
+  }
 
-    function drawPressureChart() {
-      if (!pressureCanvas || !currentScenario) return;
-      const rect = pressureCanvas.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-      const ctx = pressureCtx;
+  /* -------------------------------------------------------------
+     Reveal true location & verdict computation (Section 8 & 9)
+     ------------------------------------------------------------- */
+  function revealActualLeak() {
+    if (!currentScenario) return;
+    isRevealed = true;
 
-      ctx.save();
-      ctx.clearRect(0, 0, w, h);
+    const res = currentScenario.results[currentSensorCount];
+    const verdictEl = document.getElementById("verdict-display");
+    verdictEl.style.display = "block";
 
-      const padL = 32, padR = 12, padT = 10, padB = 18;
-      const chartW = w - padL - padR;
-      const chartH = h - padT - padB;
+    if (!res || res.detected_cycle === null) {
+      verdictEl.className = "verdict-line";
+      verdictEl.textContent = "Not detected in 8 cycles. Try a larger leak or more sensors.";
+    } else {
+      const topNode = res.top_k && res.top_k[0] ? res.top_k[0].node : null;
+      const actualNode = currentScenario.leak_node;
 
-      const activeSensors = networkData ? networkData.sensor_sets[currentSensorCount] : [];
-      const s1 = activeSensors[0] || 'J-14';
-      const s2 = activeSensors[activeSensors.length - 1] || 'J-66';
-
-      const s1Pressures = currentScenario.cycles.map(c => c.pressures[s1] || 28.0);
-      const s2Pressures = currentScenario.cycles.map(c => c.pressures[s2] || 31.0);
-
-      const allP = [...s1Pressures, ...s2Pressures];
-      const minP = Math.floor(Math.min(...allP) - 1.5);
-      const maxP = Math.ceil(Math.max(...allP) + 1.5);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1;
-      ctx.fillStyle = '#64748b';
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.textAlign = 'right';
-
-      for (let i = 0; i <= 3; i++) {
-        const val = minP + (i / 3) * (maxP - minP);
-        const y = padT + chartH - (i / 3) * chartH;
-        ctx.beginPath();
-        ctx.moveTo(padL, y);
-        ctx.lineTo(w - padR, y);
-        ctx.stroke();
-        ctx.fillText(val.toFixed(0) + 'm', padL - 6, y + 3);
-      }
-
-      ctx.textAlign = 'center';
-      for (let c = 0; c < 8; c++) {
-        const x = padL + (c / 7) * chartW;
-        ctx.fillText('C' + c, x, h - 3);
-      }
-
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.06)';
-      ctx.fillRect(padL, padT + chartH * 0.2, chartW, chartH * 0.45);
-
-      const leakX = padL + (3 / 7) * chartW;
-      ctx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(leakX, padT);
-      ctx.lineTo(leakX, padT + chartH);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      drawLineSeries(ctx, s1Pressures, minP, maxP, padL, padT, chartW, chartH, '#38bdf8', 2);
-      drawLineSeries(ctx, s2Pressures, minP, maxP, padL, padT, chartW, chartH, '#60a5fa', 1.8);
-
-      const curX = padL + (currentCycle / 7) * chartW;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(curX, padT);
-      ctx.lineTo(curX, padT + chartH);
-      ctx.stroke();
-
-      ctx.restore();
-    }
-
-    function drawDetectionChart() {
-      if (!detectionCanvas || !currentScenario) return;
-      const rect = detectionCanvas.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-      const ctx = detectionCtx;
-
-      ctx.save();
-      ctx.clearRect(0, 0, w, h);
-
-      const padL = 32, padR = 12, padT = 10, padB = 18;
-      const chartW = w - padL - padR;
-      const chartH = h - padT - padB;
-
-      const res = currentScenario.results[currentSensorCount];
-      const isPlain = (chartMetricMode === 'plain');
-      const series = isPlain ? (res.plain_d_series || [0.5]) : (res.d_series || [0.4]);
-      const thr = isPlain ? (res.plain_threshold || 1.65) : (res.threshold || 1.10);
-      const detCycle = isPlain ? res.plain_detected_cycle : res.detected_cycle;
-
-      const maxVal = Math.max(2.6, Math.max(...series) * 1.2);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1;
-      ctx.fillStyle = '#64748b';
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.textAlign = 'right';
-
-      for (let i = 0; i <= 3; i++) {
-        const val = (i / 3) * maxVal;
-        const y = padT + chartH - (i / 3) * chartH;
-        ctx.beginPath();
-        ctx.moveTo(padL, y);
-        ctx.lineTo(w - padR, y);
-        ctx.stroke();
-        ctx.fillText(val.toFixed(1), padL - 6, y + 3);
-      }
-
-      ctx.textAlign = 'center';
-      for (let c = 0; c < 8; c++) {
-        const x = padL + (c / 7) * chartW;
-        ctx.fillText('C' + c, x, h - 3);
-      }
-
-      const thrY = padT + chartH - (thr / maxVal) * chartH;
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(padL, thrY);
-      ctx.lineTo(w - padR, thrY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#f59e0b';
-      ctx.textAlign = 'right';
-      ctx.font = '9px JetBrains Mono, monospace';
-      ctx.fillText(`THR ${thr.toFixed(2)}`, w - padR, thrY - 4);
-
-      const color = isPlain ? '#fbbf24' : '#38bdf8';
-      drawLineSeries(ctx, series, 0, maxVal, padL, padT, chartW, chartH, color, 2.5);
-
-      if (detCycle !== null && detCycle !== undefined) {
-        const detX = padL + (detCycle / 7) * chartW;
-        const detY = padT + chartH - (series[detCycle] / maxVal) * chartH;
-
-        ctx.fillStyle = '#f43f5e';
-        ctx.beginPath();
-        ctx.arc(detX, detY, 5, 0, 2 * Math.PI);
-        ctx.fill();
-
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-
-      const curX = padL + (currentCycle / 7) * chartW;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(curX, padT);
-      ctx.lineTo(curX, padT + chartH);
-      ctx.stroke();
-
-      ctx.restore();
-    }
-
-    function drawLineSeries(ctx, data, minY, maxY, padL, padT, chartW, chartH, color, strokeW) {
-      if (!data || data.length === 0) return;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = strokeW;
-      ctx.beginPath();
-
-      data.forEach((val, idx) => {
-        const x = padL + (idx / (data.length - 1)) * chartW;
-        const y = padT + chartH - ((val - minY) / (maxY - minY)) * chartH;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-
-      data.forEach((val, idx) => {
-        const x = padL + (idx / (data.length - 1)) * chartW;
-        const y = padT + chartH - ((val - minY) / (maxY - minY)) * chartH;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, 2 * Math.PI);
-        ctx.fill();
-      });
-    }
-
-    function setChartMetricMode(mode) {
-      chartMetricMode = mode;
-      document.getElementById('btn-chart-cancelled').classList.toggle('active', mode === 'cancelled');
-      document.getElementById('btn-chart-plain').classList.toggle('active', mode === 'plain');
-      drawDetectionChart();
-    }
-
-    /* -------------------------------------------------------------
-       Controls
-       ------------------------------------------------------------- */
-    function setSensorCount(countStr) {
-      currentSensorCount = countStr;
-      document.querySelectorAll('[data-sensors]').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-sensors') === countStr);
-      });
-      updateSensorsLayer();
-      updateUIForCycle();
-    }
-
-    function setLeakSize(sizeStr) {
-      currentLeakSize = sizeStr;
-      document.querySelectorAll('[data-size]').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-size') === sizeStr);
-      });
-      if (currentScenario) {
-        selectScenario(currentScenario.leak_node, sizeStr);
+      if (topNode === actualNode) {
+        verdictEl.className = "verdict-line";
+        verdictEl.textContent = "Actual leak matches the top candidate.";
+      } else {
+        const hops = computeHopDistance(actualNode, topNode);
+        verdictEl.className = "verdict-line oxide";
+        verdictEl.textContent = `Actual leak was ${hops} junction${hops === 1 ? "" : "s"} from the top candidate.`;
       }
     }
 
-    function onPresetSelect(nodeId) {
-      selectScenario(nodeId, currentLeakSize);
-    }
+    renderMap();
+    renderRibbon();
+  }
 
-    function onSliderChange(val) {
-      pausePlayback();
-      currentCycle = parseInt(val, 10);
-      updateUIForCycle();
-    }
+  function computeHopDistance(src, dst) {
+    if (!network || !network.pipes) return 1;
+    if (src === dst) return 0;
 
-    function stepCycle(dir) {
-      pausePlayback();
-      currentCycle = Math.max(0, Math.min(7, currentCycle + dir));
-      updateUIForCycle();
-    }
+    const adj = {};
+    network.pipes.forEach(p => {
+      adj[p.from] = adj[p.from] || [];
+      adj[p.to] = adj[p.to] || [];
+      adj[p.from].push(p.to);
+      adj[p.to].push(p.from);
+    });
 
-    function togglePlayPause() {
-      if (isPlaying) pausePlayback();
-      else startPlayback();
-    }
+    const dist = { [src]: 0 };
+    const queue = [src];
 
-    function startPlayback() {
-      isPlaying = true;
-      document.getElementById('icon-play').style.display = 'none';
-      document.getElementById('icon-pause').style.display = 'block';
-
-      if (currentCycle >= 7) currentCycle = 0;
-
-      playIntervalId = setInterval(() => {
-        if (currentCycle < 7) {
-          currentCycle++;
-          updateUIForCycle();
-        } else {
-          pausePlayback();
+    while (queue.length > 0) {
+      const u = queue.shift();
+      if (u === dst) return dist[u];
+      for (const v of adj[u] || []) {
+        if (dist[v] === undefined) {
+          dist[v] = dist[u] + 1;
+          queue.push(v);
         }
-      }, playSpeedMs);
-    }
-
-    function pausePlayback() {
-      isPlaying = false;
-      document.getElementById('icon-play').style.display = 'block';
-      document.getElementById('icon-pause').style.display = 'none';
-      if (playIntervalId) {
-        clearInterval(playIntervalId);
-        playIntervalId = null;
       }
     }
+    return 2;
+  }
 
-    function focusNode(nodeId) {
-      if (!networkData) return;
-      const node = networkData.nodes.find(n => n.id === nodeId);
-      if (!node) return;
+  /* -------------------------------------------------------------
+     Controls & Selectors
+     ------------------------------------------------------------- */
+  function setSize(size) {
+    currentSize = size;
+    document.querySelectorAll("[data-size]").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-size") === size);
+    });
+    if (currentScenario) {
+      loadScenario(currentScenario.leak_node, size);
+    }
+  }
 
-      mapPanX = 500 - node.x * mapZoom;
-      mapPanY = 310 - node.y * mapZoom;
-      applyMapTransform();
+  function setSensors(count) {
+    currentSensorCount = count;
+    document.querySelectorAll("[data-sensors]").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-sensors") === count);
+    });
+    selectedSensorId = network.sensor_sets[count][0];
+    updateUI();
+  }
 
-      const el = document.getElementById(`node-${nodeId}`);
-      if (el) {
-        el.setAttribute('r', '12');
-        el.setAttribute('fill', '#f59e0b');
-        setTimeout(() => {
-          el.setAttribute('r', '5');
-          el.setAttribute('fill', '#334e7a');
-        }, 1200);
+  /* -------------------------------------------------------------
+     Playback controls (1 cycle per second)
+     ------------------------------------------------------------- */
+  function togglePlay() {
+    if (isPlaying) pausePlayback();
+    else startPlayback();
+  }
+
+  function startPlayback() {
+    if (prefersReducedMotion) {
+      currentCycle = 7;
+      updateUI();
+      return;
+    }
+    isPlaying = true;
+    document.getElementById("btn-play").textContent = "Pause";
+    if (currentCycle >= 7) currentCycle = 0;
+
+    playTimer = setInterval(() => {
+      if (currentCycle < 7) {
+        currentCycle++;
+        updateUI();
+      } else {
+        pausePlayback();
+      }
+    }, 1000);
+  }
+
+  function pausePlayback() {
+    isPlaying = false;
+    document.getElementById("btn-play").textContent = "Play";
+    if (playTimer) {
+      clearInterval(playTimer);
+      playTimer = null;
+    }
+  }
+
+  function stepPlayback(dir) {
+    pausePlayback();
+    currentCycle = Math.max(0, Math.min(7, currentCycle + dir));
+    updateUI();
+  }
+
+  /* -------------------------------------------------------------
+     Tooltip helper
+     ------------------------------------------------------------- */
+  function showTooltip(e, text) {
+    const tt = document.getElementById("map-tooltip");
+    const pane = document.querySelector(".map-pane").getBoundingClientRect();
+    tt.innerHTML = text;
+    tt.style.display = "block";
+    tt.style.left = (e.clientX - pane.left) + "px";
+    tt.style.top = (e.clientY - pane.top) + "px";
+  }
+
+  function hideTooltip() {
+    document.getElementById("map-tooltip").style.display = "none";
+  }
+
+  /* -------------------------------------------------------------
+     Internal fallback mock generator if files are absent
+     ------------------------------------------------------------- */
+  function generateInternalMockData() {
+    const nodes = [];
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 6; c++) {
+        nodes.push({ id: `J-${10 + r * 6 + c}`, x: 50 + c * 80, y: 40 + r * 70 });
       }
     }
-
-    function focusPressureChart() {
-      document.getElementById('chart-pressure').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function focusCandidates() {
-      document.getElementById('suspects-card').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    /* -------------------------------------------------------------
-       Pan & Zoom
-       ------------------------------------------------------------- */
-    function setupSvgInteractions() {
-      const container = document.getElementById('svg-container');
-
-      container.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'circle' || e.target.tagName === 'line') return;
-        isPanning = true;
-        panStartX = e.clientX - mapPanX;
-        panStartY = e.clientY - mapPanY;
-        container.classList.add('panning');
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isPanning) return;
-        mapPanX = e.clientX - panStartX;
-        mapPanY = e.clientY - panStartY;
-        applyMapTransform();
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (isPanning) {
-          isPanning = false;
-          container.classList.remove('panning');
-        }
-      });
-
-      container.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const factor = e.deltaY < 0 ? 1.1 : 0.9;
-        zoomMap(factor);
-      });
-    }
-
-    function zoomMap(factor) {
-      mapZoom = Math.max(0.5, Math.min(3.5, mapZoom * factor));
-      applyMapTransform();
-    }
-
-    function resetMapView() {
-      mapZoom = 1.0;
-      mapPanX = 0;
-      mapPanY = 0;
-      applyMapTransform();
-    }
-
-    function applyMapTransform() {
-      const g = document.getElementById('map-zoom-group');
-      if (g) {
-        g.setAttribute('transform', `translate(${mapPanX}, ${mapPanY}) scale(${mapZoom})`);
+    const pipes = [];
+    let pCount = 1;
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 6; c++) {
+        const cur = `J-${10 + r * 6 + c}`;
+        if (c < 5) pipes.push({ id: `P-${pCount++}`, from: cur, to: `J-${10 + r * 6 + c + 1}` });
+        if (r < 4) pipes.push({ id: `P-${pCount++}`, from: cur, to: `J-${10 + (r + 1) * 6 + c}` });
       }
     }
+    const s20 = nodes.slice(0, 20).map(n => n.id);
+    network = {
+      nodes: nodes,
+      pipes: pipes,
+      sensor_sets: {
+        "5": s20.slice(0, 5),
+        "10": s20.slice(0, 10),
+        "20": s20
+      },
+      supply_windows: [[6, 9], [18, 21]]
+    };
+  }
+</script>
 
-    function showTooltip(e, html) {
-      const tt = document.getElementById('map-tooltip');
-      const ws = document.getElementById('svg-container').getBoundingClientRect();
-      tt.innerHTML = html;
-      tt.style.display = 'block';
-      tt.style.left = (e.clientX - ws.left) + 'px';
-      tt.style.top = (e.clientY - ws.top) + 'px';
-    }
-
-    function hideTooltip() {
-      document.getElementById('map-tooltip').style.display = 'none';
-    }
-
-    function openPresentationModal() {
-      pausePlayback();
-      document.getElementById('presentation-modal').classList.add('open');
-    }
-
-    function closePresentationModal() {
-      document.getElementById('presentation-modal').classList.remove('open');
-    }
-
-    function switchSlideTab(idx) {
-      document.querySelectorAll('.slide-tab').forEach((tab, i) => {
-        tab.classList.toggle('active', i === idx);
-      });
-      document.querySelectorAll('.slide-pane').forEach((pane, i) => {
-        pane.classList.toggle('active', i === idx);
-      });
-    }
-  </script>
 </body>
 </html>

@@ -954,7 +954,7 @@ function RibbonSection({
       stroke: "#0F172A",
       strokeWidth: "1.5"
     })));
-  })(), currentResults?.detected_cycle !== null && currentCycle >= currentResults.detected_cycle && (() => {
+  })(), currentResults && currentResults.detected_cycle !== null && currentCycle >= currentResults.detected_cycle && (() => {
     const detC = currentResults.detected_cycle;
     const detX = padL + detC * cycleW + cycleW / 2;
     return /*#__PURE__*/React.createElement("g", null, /*#__PURE__*/React.createElement("line", {

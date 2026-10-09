@@ -1,0 +1,27 @@
+:root {
+  --concrete:   #E3E5E0; /* page background: cool mineral grey-green */
+  --plaster:    #F4F5F1; /* map canvas and panel surface */
+  --ink:        #17211D; /* text and strong lines (green-black) */
+  --cast-iron:  #59635E; /* secondary text, normal pipes */
+  --verdigris:  #2E7D6B; /* normal / supplied, active selection */
+  --brass:      #B58A2C; /* sensors, valve and pump symbols */
+  --oxide:      #A63F1D; /* leak and alarm only */
+  --sand:       #E8D9B5; /* lowest heat step, selection background */
+
+  /* heatmap: 5 flat steps, single hue family, no smooth blending */
+  --heat-1: #EFE3C2;
+  --heat-2: #E0B96E;
+  --heat-3: #C98A3A;
+  --heat-4: #B05A22;
+  --heat-5: #7E2A12;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 40px;
+
+  --radius-control: 3px;
+  --radius-badge: 999px;
+}

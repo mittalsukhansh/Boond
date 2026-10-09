@@ -1,0 +1,58 @@
+/* Resets and browser overrides */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  color-scheme: light;
+  accent-color: var(--verdigris);
+  font-family: 'Public Sans', system-ui, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  background-color: var(--concrete);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--concrete);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--ink);
+  text-decoration-color: var(--cast-iron);
+}
+
+::selection {
+  background: var(--sand);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--cast-iron);
+  background: var(--plaster);
+  border-radius: var(--radius-control);
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Numerals */
+.num, [data-num] {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}

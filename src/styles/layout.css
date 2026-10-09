@@ -1,0 +1,130 @@
+/* Layout structure */
+.app-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--concrete);
+}
+
+.top-bar {
+  height: 48px;
+  background: var(--concrete);
+  border-bottom: 1px solid var(--cast-iron);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  flex-shrink: 0;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.brand-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--ink);
+}
+
+.brand-tagline {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--cast-iron);
+}
+
+.simulated-badge {
+  font-size: 14px;
+  font-weight: 500;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-badge);
+  background: var(--plaster);
+  color: var(--ink);
+}
+
+.main-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.workspace-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 62% 38%;
+  min-height: 0;
+}
+
+.map-pane {
+  background: var(--plaster);
+  border-right: 1px solid var(--cast-iron);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.side-pane {
+  background: var(--plaster);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.ribbon-pane {
+  height: 28vh;
+  min-height: 200px;
+  max-height: 320px;
+  background: var(--plaster);
+  border-top: 1px solid var(--cast-iron);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Ruled continuous sections in side panel */
+.panel-section {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--concrete);
+}
+
+.panel-section:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 900px) {
+  .app-frame {
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .workspace-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .map-pane {
+    height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--cast-iron);
+  }
+
+  .ribbon-pane {
+    height: 280px;
+    order: 2;
+  }
+
+  .side-pane {
+    order: 3;
+    overflow-y: visible;
+  }
+}
